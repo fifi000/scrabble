@@ -1,0 +1,79 @@
+import string
+from typing import Generator
+
+from core.field import Field
+from core.enums.field_type import FieldType
+from core.letter import Letter
+from core.position import Position
+
+
+ROW_COUNT, COLUMN_COUNT = 15, 15
+
+# rows
+ROW_LABELS = string.ascii_lowercase[:ROW_COUNT]
+assert len(ROW_LABELS) == ROW_COUNT
+assert ROW_LABELS[0] == "a"
+assert ROW_LABELS[-1] == "o"
+
+# columns
+COLUMN_LABELS = [x + 1 for x in range(COLUMN_COUNT)]
+assert len(COLUMN_LABELS) == COLUMN_COUNT
+assert COLUMN_LABELS[0] == 1
+assert COLUMN_LABELS[-1] == 15
+
+_board = [
+    [4, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 4],  # a
+    [0, 3, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 3, 0],  # b
+    [0, 0, 3, 0, 0, 0, 1, 0, 1, 0, 0, 0, 3, 0, 0],  # c
+    [1, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 3, 0, 0, 1],  # d
+    [0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0],  # e
+    [0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0],  # f
+    [0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0],  # g
+    [4, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 4],  # h
+    [0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0],  # i
+    [0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0],  # j
+    [0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0],  # k
+    [1, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 3, 0, 0, 1],  # l
+    [0, 0, 3, 0, 0, 0, 1, 0, 1, 0, 0, 0, 3, 0, 0],  # m
+    [0, 3, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 3, 0],  # n
+    [4, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 4],  # o
+]
+
+
+class Board:
+    def __init__(self) -> None:
+        self._grid = self._create_grid()
+
+    def _create_grid(self) -> list[list[Field]]:
+        grid: list[list[Field]] = []
+
+        for i, row in enumerate(_board):
+            grid.append([])
+            for j, cell in enumerate(row):
+                grid[-1].append(Field(Position(i, j), FieldType(cell)))
+
+        return grid
+
+    @property
+    def grid(self) -> list[list[Field]]:
+        return self._grid
+
+    @property
+    def all_fields(self) -> Generator[Field, None, None]:
+        for row in self._grid:
+            for cell in row:
+                yield cell
+
+    def get_field(self, position: Position) -> Field:
+        if not (0 <= position.row < len(self._grid)):
+            raise IndexError('Given row is not valid.')
+        
+        if not (0 <= position.column < len(self._grid[position.row])):
+            raise IndexError('Given column is not valid.')
+
+        return self._grid[position.row][position.column]
+
+    def place_letters(self, letter_positions: list[tuple[Position, Letter]]) -> None:
+        for position, letter in letter_positions:
+            field = self.get_field(position)
+            field.letter = letter

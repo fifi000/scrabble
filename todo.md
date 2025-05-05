@@ -1,0 +1,7 @@
+- [ ] user can check rules
+- [ ] llm connected to rules
+- [ ] word check
+- [ ] different languages to play
+- [ ] UI language selection
+- [ ] AI oponent, based on read text
+- [ ] undo / redo
