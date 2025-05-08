@@ -1,4 +1,5 @@
 from __future__ import annotations
+from uuid import UUID
 from core.board import Board
 from core.enums.language import Language
 from core.letter import Letter
@@ -23,26 +24,37 @@ class Game:
     def current_player(self) -> Player:
         return self.players[self.move % len(self.players)]
 
+    def get_player(self, id: UUID) -> Player:
+        for player in self.players:
+            if player.id == id:
+                return player
+
+        raise Exception(f"Could not find a player for given '{id=}'")
+
     def can_play(self) -> bool:
         return True
 
-    def is_valid_word_placement(self, letter_positions: list[tuple[Position, Letter]]) -> bool:
+    def is_valid_word_placement(
+        self, letter_positions: list[tuple[Position, Letter]]
+    ) -> bool:
         return True
 
         for position, letter in letter_positions:
             if not self.board.get_field(position).is_empty:
-                return False        
-        
+                return False
+
         return True
 
-    # 
+    #
     # player available moves
-    # 
+    #
 
     def _check_player(self, player: Player) -> None:
         if player != self.current_player:
             if player not in self.players:
-                raise Exception('There is no player in game corresponding to provided player.')
+                raise Exception(
+                    'There is no player in game corresponding to provided player.'
+                )
             else:
                 raise Exception('This is not this player move.')
 
@@ -54,21 +66,24 @@ class Game:
             result = func(self, player, *args, **kwargs)
             self.move += 1
             return result
+
         return wrapper
 
     @player_move
     def exchange_letters(self, player: Player, letters: list[Letter]) -> None:
         new_letters = self.letter_bag.exchange(letters)
-        
+
         for letter in letters:
             player.letters.remove(letter)
 
         player.letters.extend(new_letters)
 
     @player_move
-    def place_letters(self, player: Player, letter_positions: list[tuple[Position, Letter]]) -> None:
+    def place_letters(
+        self, player: Player, letter_positions: list[tuple[Position, Letter]]
+    ) -> None:
         if not self.is_valid_word_placement(letter_positions):
-            raise Exception('Given move is not valid.')            
+            raise Exception('Given move is not valid.')
 
         self.board.place_letters(letter_positions)
 

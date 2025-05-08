@@ -1,16 +1,11 @@
 Board {
-  grid-size: 15 15;
-  
-  # '15 rows' * '2 chars height'
-  height: 30;
-  # 2x height^^^
-  width: 60;
-  background: green;
+  background:rgb(14, 82, 34);
 }
 
 .cell {
   content-align: center middle;
   height: 100%;
   width: 100%;
-  background:rgb(14, 82, 34);
+  outline-right: ascii rgb(170, 160, 101);
+  outline-bottom: ascii rgb(170, 160, 101);
 }
