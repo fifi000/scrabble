@@ -1,28 +1,22 @@
-from collections.abc import Generator
+import random
+import string
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Static
 from textual.containers import Grid
 
 
+def get_piece() -> str:
+    return random.choice(string.ascii_uppercase) + random.choice(
+        ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉']
+    )
+
+
 class Board(Grid):
     def compose(self) -> ComposeResult:
         rows, cols = 15, 15
-        colors = Board.colors()
 
-        for i in range(rows):
-            for j in range(cols):
-                widget = Static(str(i * j), classes='cell')
-                widget.styles.color = next(colors)
-                widget.styles.background = next(colors)
-                yield widget
-
-    @staticmethod
-    def colors() -> Generator[str, None, None]:
-        while True:
-            yield 'white'
-            yield 'black'
-            yield 'black'
-            yield 'white'
+        for _ in range(rows * cols):
+            yield Static(get_piece(), classes='cell')
 
 
 class ScrabbleApp(App):
