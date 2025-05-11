@@ -2,8 +2,8 @@ from __future__ import annotations
 from uuid import UUID
 from core.board import Board
 from core.enums.language import Language
-from core.letter import Letter
-from core.letter_bag import LetterBag
+from core.tile import Tile
+from core.tile_bag import TileBag
 from core.player import Player
 from core.position import Position
 from functools import wraps
@@ -13,12 +13,12 @@ class Game:
     def __init__(self, players: list[Player], language: Language) -> None:
         self.players: list[Player] = players
         self.language = language
-        self.letter_bag = LetterBag(language)
+        self.letter_bag = TileBag(language)
         self.board = Board()
         self.move = 0
 
         for player in self.players:
-            player.letters = self.letter_bag.scrabble(7)
+            player.tiles = self.letter_bag.scrabble(7)
 
     @property
     def current_player(self) -> Player:
@@ -35,7 +35,7 @@ class Game:
         return True
 
     def is_valid_word_placement(
-        self, letter_positions: list[tuple[Position, Letter]]
+        self, letter_positions: list[tuple[Position, Tile]]
     ) -> bool:
         return True
 
@@ -70,17 +70,17 @@ class Game:
         return wrapper
 
     @player_move
-    def exchange_letters(self, player: Player, letters: list[Letter]) -> None:
+    def exchange_letters(self, player: Player, letters: list[Tile]) -> None:
         new_letters = self.letter_bag.exchange(letters)
 
         for letter in letters:
-            player.letters.remove(letter)
+            player.tiles.remove(letter)
 
-        player.letters.extend(new_letters)
+        player.tiles.extend(new_letters)
 
     @player_move
     def place_letters(
-        self, player: Player, letter_positions: list[tuple[Position, Letter]]
+        self, player: Player, letter_positions: list[tuple[Position, Tile]]
     ) -> None:
         if not self.is_valid_word_placement(letter_positions):
             raise Exception('Given move is not valid.')
@@ -88,7 +88,7 @@ class Game:
         self.board.place_letters(letter_positions)
 
         for position, letter in letter_positions:
-            player.letters.remove(letter)
+            player.tiles.remove(letter)
 
         new_letters = self.letter_bag.scrabble(len(letter_positions))
-        player.letters.extend(new_letters)
+        player.tiles.extend(new_letters)

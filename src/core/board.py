@@ -1,9 +1,9 @@
+from collections.abc import Iterable
 import string
-from typing import Generator
 
 from core.field import Field
 from core.enums.field_type import FieldType
-from core.letter import Letter
+from core.tile import Tile
 from core.position import Position
 
 
@@ -12,8 +12,8 @@ ROW_COUNT, COLUMN_COUNT = 15, 15
 # rows
 ROW_LABELS = string.ascii_lowercase[:ROW_COUNT]
 assert len(ROW_LABELS) == ROW_COUNT
-assert ROW_LABELS[0] == "a"
-assert ROW_LABELS[-1] == "o"
+assert ROW_LABELS[0] == 'a'
+assert ROW_LABELS[-1] == 'o'
 
 # columns
 COLUMN_LABELS = [x + 1 for x in range(COLUMN_COUNT)]
@@ -59,7 +59,7 @@ class Board:
         return self._grid
 
     @property
-    def all_fields(self) -> Generator[Field, None, None]:
+    def all_fields(self) -> Iterable[Field]:
         for row in self._grid:
             for cell in row:
                 yield cell
@@ -67,13 +67,13 @@ class Board:
     def get_field(self, position: Position) -> Field:
         if not (0 <= position.row < len(self._grid)):
             raise IndexError('Given row is not valid.')
-        
+
         if not (0 <= position.column < len(self._grid[position.row])):
             raise IndexError('Given column is not valid.')
 
         return self._grid[position.row][position.column]
 
-    def place_letters(self, letter_positions: list[tuple[Position, Letter]]) -> None:
+    def place_letters(self, letter_positions: list[tuple[Position, Tile]]) -> None:
         for position, letter in letter_positions:
             field = self.get_field(position)
             field.letter = letter
