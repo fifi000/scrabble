@@ -3,16 +3,21 @@ import string
 from uuid import UUID
 
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Static
+from textual.widgets import Header
+from textual.widget import Widget
+from textual.containers import Horizontal
 
+from core.board import ROW_COUNT, COLUMN_COUNT
 from core.enums.language import Language
 from core.game import Game
 from core.player import Player
-from ui.widgets.Board import Board
-from ui.widgets.Tile import Tile
+from ui.widgets.tile import Tile
+from ui.widgets.board import Board
+from ui.widgets.field import Field
+from ui.widgets.tiles_group import TilesGroup
 
 
-def get_piece() -> str:
+def get_text() -> str:
     if random.random() > 0.7:
         return random.choice(string.ascii_uppercase) + random.choice(
             ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉']
@@ -34,17 +39,24 @@ class ScrabbleApp(App):
     def player(self) -> Player:
         return self.game.get_player(self.player_id)
 
+    def _get_board(self) -> Widget:
+        fields = [
+            Field(game_field) for row in self.game.board.grid for game_field in row
+        ]
+
+        return Board(ROW_COUNT, COLUMN_COUNT, fields)
+
     def compose(self) -> ComposeResult:
         # header
         yield Header(name='Scrabble')
 
-        # board grid
-        yield Board(15, 15, [Tile(get_piece(), classes='cell') for _ in range(15 * 15)])
-
         # available letters
-        letters = [letter.symbol for letter in self.player.letters]
-        text = ' '.join(letters)
-        yield Static(f'Available letters: {text}')
+        tiles = [Tile(game_tile) for game_tile in self.player.tiles]
+
+        yield Horizontal(
+            self._get_board(),
+            TilesGroup(tiles),
+        )
 
     def on_mount(self) -> None:
         self.title = 'Scrabble'
