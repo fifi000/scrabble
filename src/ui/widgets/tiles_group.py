@@ -1,7 +1,9 @@
 from textual.app import ComposeResult
 from textual.containers import Grid, Horizontal, HorizontalGroup
 from textual import events
+from textual.css.scalar import ScalarOffset
 
+from ui.widgets.draggable import Draggable
 from ui.widgets.tile import Tile
 
 
@@ -24,3 +26,10 @@ class TilesGroup(Horizontal):
                     tile.toggle_class('highlighted')
                 else:
                     tile.remove_class('highlighted')
+
+    def on_draggable_drag_ended(self, message: Draggable.DragEnded) -> None:
+        # reorder tiles
+        self.tiles = list(sorted(self.tiles, key=lambda x: x.region.x))
+        for tile in self.tiles:
+            tile.styles.offset = (0, 0)
+        self.refresh(repaint=True, layout=True, recompose=True)
