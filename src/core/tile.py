@@ -19,4 +19,4 @@ class Tile:
         return self.id == value.id
 
     def __repr__(self) -> str:
-        return f'({self.symbol}, {self.points})'
+        return f'Tile({self.symbol}, {self.points})'
