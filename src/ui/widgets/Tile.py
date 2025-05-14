@@ -15,11 +15,11 @@ class Tile(Draggable):
     def __init__(self, game_tile: GameTile, *args, **kwargs) -> None:
         super().__init__(allow_vertical_drag=False, *args, **kwargs)
 
-        self.text = ' ' + game_tile.symbol + _get_points_symbol(game_tile.points)
+        self.text = game_tile.symbol + _get_points_symbol(game_tile.points)
         self.game_tile = game_tile
 
     def render(self) -> str:
-        return self.text
+        return self.text.center(self.size.width)
 
     def __repr__(self) -> str:
         return self.game_tile.__repr__()
