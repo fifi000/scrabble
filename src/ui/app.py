@@ -2,6 +2,7 @@ import random
 import string
 from uuid import UUID
 
+from textual.screen import Screen
 from textual.app import App, ComposeResult
 from textual.widgets import Header
 from textual.widget import Widget
@@ -9,7 +10,7 @@ from textual.containers import Horizontal
 
 from core.board import ROW_COUNT, COLUMN_COUNT
 from core.enums.language import Language
-from core.game import Game
+from core.game import Game as CoreGame
 from core.player import Player
 from ui.widgets.tile import Tile
 from ui.widgets.board import Board
@@ -26,10 +27,10 @@ def get_text() -> str:
         return str()
 
 
-class ScrabbleApp(App):
+class Game(Screen):
     CSS_PATH = 'scrabble.tcss'
 
-    def __init__(self, game: Game, player_id: UUID, *args, **kwargs):
+    def __init__(self, game: CoreGame, player_id: UUID, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.game = game
@@ -62,17 +63,16 @@ class ScrabbleApp(App):
         self.title = 'Scrabble'
 
 
-def main() -> None:
-    players = [
-        Player('Filip'),
-        Player('Zuzia'),
-    ]
+class Scrabble(App[None]):
+    def on_mount(self) -> None:
+        players = [
+            Player('Filip'),
+            Player('Zuzia'),
+        ]
 
-    game = Game(players, Language.POLISH)
-
-    app = ScrabbleApp(game, players[0].id)
-    app.run()
+        game = CoreGame(players, Language.POLISH)
+        self.push_screen(Game(game, players[0].id))
 
 
 if __name__ == '__main__':
-    main()
+    Scrabble().run()
