@@ -1,19 +1,32 @@
 from textual.app import ComposeResult
-from textual.containers import Grid, Horizontal, HorizontalGroup
+from textual.containers import Horizontal
 from textual import events
-from textual.css.scalar import ScalarOffset
+from textual.reactive import reactive
 
 from ui.widgets.draggable import Draggable
 from ui.widgets.tile import Tile
 
 
-class TilesGroup(Horizontal):
+class TileRack(Horizontal):
     BORDER_TITLE = 'Available letters'
+
+    tiles: reactive[list[Tile]] = reactive(list, recompose=True)
 
     def __init__(self, tiles: list[Tile], *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.tiles = tiles
+
+    def get_selected(self) -> Tile | None:
+        for tile in self.tiles:
+            if tile.has_class('highlighted'):
+                return tile
+
+        return None
+
+    def remove(self, tile):
+        self.tiles.remove(tile)
+        self.mutate_reactive(TileRack.tiles)
 
     def compose(self) -> ComposeResult:
         for tile in self.tiles:
@@ -32,4 +45,3 @@ class TilesGroup(Horizontal):
         self.tiles = list(sorted(self.tiles, key=lambda x: x.region.x))
         for tile in self.tiles:
             tile.styles.offset = (0, 0)
-        self.refresh(repaint=True, layout=True, recompose=True)

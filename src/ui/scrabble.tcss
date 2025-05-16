@@ -1,4 +1,6 @@
 Board {
+  dock: left;
+
   box-sizing: content-box;
   grid-gutter: 1;
   
@@ -29,11 +31,9 @@ Tile.highlighted {
   border: heavy rgb(170, 160, 101);
 }
 
-TilesGroup {  
+TileRack {  
   height: auto;
   width: 1fr;
-
-  margin: 1;
 
   border: solid rgb(2, 59, 6);
   background: rgb(4, 105, 12);

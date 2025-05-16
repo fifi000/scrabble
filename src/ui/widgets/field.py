@@ -1,28 +1,34 @@
+from __future__ import annotations
 from core.enums.field_type import FieldType
-from core.field import Field as GameField
 
 from textual.widgets import Static
 from textual.reactive import reactive
 
+from ui.widgets.tile import Tile
+
 
 class Field(Static):
-    text = reactive('')
+    tile: reactive[Tile | None] = reactive(None)
 
-    def __init__(self, game_field: GameField, *args, **kwargs) -> None:
+    def __init__(self, type: FieldType, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.game_field = game_field
+        self.type = type
 
     def render(self) -> str:
-        return self.text
+        if not self.tile:
+            return ''
+        return self.tile.text.center(self.size.width)
 
-    @property
-    def bg_color(self) -> str | None:
-        # a tile is placed
-        if not self.game_field.is_empty:
+    def watch_tile(self, new_tile: Tile) -> None:
+        self.styles.background = Field.get_background_color(self)
+
+    @staticmethod
+    def get_background_color(field: Field) -> str | None:
+        if field.tile:
             return 'yellow'
 
-        match self.game_field.type:
+        match field.type:
             case FieldType.STANDARD:
                 return None
             case FieldType.DOUBLE_LETTER:
@@ -33,6 +39,3 @@ class Field(Static):
                 return '#9c733e'
             case FieldType.TRIPPLE_WORD:
                 return '#ce1717'
-
-    def on_mount(self) -> None:
-        self.styles.background = self.bg_color

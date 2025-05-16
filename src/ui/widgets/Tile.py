@@ -1,5 +1,3 @@
-from core.tile import Tile as GameTile
-
 from ui.widgets.draggable import Draggable
 
 
@@ -12,14 +10,18 @@ def _get_points_symbol(points: int) -> str:
 
 
 class Tile(Draggable):
-    def __init__(self, game_tile: GameTile, *args, **kwargs) -> None:
+    def __init__(self, symbol: str, points: int, *args, **kwargs) -> None:
         super().__init__(allow_vertical_drag=False, *args, **kwargs)
 
-        self.text = game_tile.symbol + _get_points_symbol(game_tile.points)
-        self.game_tile = game_tile
+        self.symbol = symbol
+        self.points = _get_points_symbol(points)
+
+    @property
+    def text(self) -> str:
+        return self.symbol + self.points
 
     def render(self) -> str:
         return self.text.center(self.size.width)
 
     def __repr__(self) -> str:
-        return self.game_tile.__repr__()
+        return f'({self.symbol}{self.points})'

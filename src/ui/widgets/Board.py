@@ -3,13 +3,18 @@ from textual.containers import Grid
 from textual.geometry import Size
 from textual.css.scalar import Unit
 from textual import events
+from textual.message import Message
 
 from ui.widgets.field import Field
-from ui.widgets.tile import Tile
-from ui.widgets.tiles_group import TilesGroup
 
 
 class Board(Grid):
+    class FieldSelected(Message):
+        def __init__(self, field: Field) -> None:
+            super().__init__()
+
+            self.field = field
+
     def __init__(
         self, row_count: int, column_count: int, fields: list[Field], *args, **kwargs
     ) -> None:
@@ -17,6 +22,7 @@ class Board(Grid):
         assert row_count * column_count == len(fields)
 
         super().__init__(*args, **kwargs)
+
         self.row_count = row_count
         self.column_count = column_count
 
@@ -54,9 +60,4 @@ class Board(Grid):
 
     def on_click(self, event: events.Click) -> None:
         if isinstance(event.control, Field):
-            group = self.app.query_one(TilesGroup)
-            tile = group.query_exactly_one('.highlighted')
-            if isinstance(tile, Tile):
-                event.control.text = tile.text
-
-                tile.visible = False
+            self.post_message(self.FieldSelected(event.control))
