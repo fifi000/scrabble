@@ -73,7 +73,7 @@ class Board:
 
         return self._grid[position.row][position.column]
 
-    def place_letters(self, letter_positions: list[tuple[Position, Tile]]) -> None:
-        for position, letter in letter_positions:
+    def place_tiles(self, tiles: list[Tile], positions: list[Position]) -> None:
+        for tile, position in zip(tiles, positions, strict=True):
             field = self.get_field(position)
-            field.letter = letter
+            field.tile = tile

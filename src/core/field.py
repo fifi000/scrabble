@@ -5,15 +5,15 @@ from core.position import Position
 
 class Field:
     def __init__(
-        self, position: Position, type: FieldType, letter: Tile | None = None
+        self, position: Position, type: FieldType, tile: Tile | None = None
     ) -> None:
         self.position: Position = position
         self.type: FieldType = type
-        self.letter: Tile | None = letter
+        self.tile: Tile | None = tile
 
     @property
     def is_empty(self) -> bool:
-        return self.letter is None
+        return self.tile is None
 
     @property
     def row(self) -> int:

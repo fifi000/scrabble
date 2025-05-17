@@ -1,7 +1,9 @@
-class Position:
-    def __init__(self, row: int, column: int) -> None:
-        self.row = row
-        self.column = column
+from typing import NamedTuple
+
+
+class Position(NamedTuple):
+    row: int = 0
+    column: int = 0
 
     def __repr__(self) -> str:
-        return f"({self.row}, {self.column})"
+        return f'({self.row}, {self.column})'

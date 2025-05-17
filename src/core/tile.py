@@ -8,6 +8,8 @@ class Tile:
         self.symbol: str = letter
         self.points: int = points
 
+        self.is_placed = False
+
     @property
     def is_blank(self):
         return self.symbol == '?' and self.points == 0

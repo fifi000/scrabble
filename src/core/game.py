@@ -1,24 +1,24 @@
 from __future__ import annotations
+
+from functools import wraps
 from uuid import UUID
+
 from core.board import Board
 from core.enums.language import Language
-from core.tile import Tile
-from core.tile_bag import TileBag
 from core.player import Player
 from core.position import Position
-from functools import wraps
+from core.tile import Tile
+from core.tile_bag import TileBag
 
 
 class Game:
-    def __init__(self, players: list[Player], language: Language) -> None:
-        self.players: list[Player] = players
+    def __init__(self, language: Language) -> None:
         self.language = language
         self.letter_bag = TileBag(language)
+        self.players: list[Player] = []
         self.board = Board()
         self.move = 0
-
-        for player in self.players:
-            player.tiles = self.letter_bag.scrabble(7)
+        self.game_started = False
 
     @property
     def current_player(self) -> Player:
@@ -34,20 +34,19 @@ class Game:
     def can_play(self) -> bool:
         return True
 
-    def is_valid_word_placement(
-        self, letter_positions: list[tuple[Position, Tile]]
-    ) -> bool:
-        return True
+    def is_valid_word_placement(self, positions: list[Position]) -> bool:
+        return all(self.board.get_field(position).is_empty for position in positions)
 
-        for position, letter in letter_positions:
-            if not self.board.get_field(position).is_empty:
-                return False
+    def add_player(self, player: Player) -> None:
+        self.players.append(player)
 
-        return True
+    def start(self) -> None:
+        if self.game_started:
+            raise Exception('Game have already started.')
+        self.game_started = True
 
-    #
-    # player available moves
-    #
+        for player in self.players:
+            player.tiles = self.letter_bag.scrabble(7)
 
     def _check_player(self, player: Player) -> None:
         if player != self.current_player:
@@ -79,16 +78,25 @@ class Game:
         player.tiles.extend(new_letters)
 
     @player_move
-    def place_letters(
-        self, player: Player, letter_positions: list[tuple[Position, Tile]]
-    ) -> None:
-        if not self.is_valid_word_placement(letter_positions):
+    def place_tiles(
+        self,
+        player: Player,
+        tile_ids: list[UUID],
+        field_positions: list[tuple[int, int]],
+    ) -> list[Tile]:
+        positions = [Position(x, y) for (x, y) in field_positions]
+
+        if not self.is_valid_word_placement(positions):
             raise Exception('Given move is not valid.')
 
-        self.board.place_letters(letter_positions)
+        tiles = [player.get_tile(tile_id) for tile_id in tile_ids]
 
-        for position, letter in letter_positions:
-            player.tiles.remove(letter)
+        self.board.place_tiles(tiles, positions)
 
-        new_letters = self.letter_bag.scrabble(len(letter_positions))
-        player.tiles.extend(new_letters)
+        for tile in tiles:
+            player.tiles.remove(tile)
+
+        new_tiles = self.letter_bag.scrabble(len(tiles))
+        player.tiles.extend(new_tiles)
+
+        return new_tiles

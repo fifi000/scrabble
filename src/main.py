@@ -28,7 +28,7 @@ def main() -> None:
             letter = next((x for x in available_letters if x.symbol == char))
             letters.append(letter)
 
-        game.place_letters(
+        game.place_tiles(
             current_player, [(Position(0, 0), letter) for letter in letters]
         )
 
