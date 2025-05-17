@@ -1,24 +1,29 @@
+import uuid
 from textual.app import App
 
 from core.enums.language import Language
-from core.game import Game as CoreGame
+from core.game import Game
 from core.player import Player
-from ui.screens.game import Game
+from ui.screens.game_screen import GameScreen
 
 
-class Scrabble(App[None]):
+class ScrabbleApp(App[None]):
     CSS_PATH = 'scrabble.tcss'
     TITLE = 'Scrabble'
 
     def on_mount(self) -> None:
+        game = Game(Language.POLISH)
+
         players = [
-            Player('Filip'),
-            Player('Zuzia'),
+            Player(uuid.uuid4(), 'Filip'),
+            Player(uuid.uuid4(), 'Zuzia'),
         ]
 
-        game = CoreGame(players, Language.POLISH)
-        self.push_screen(Game(game, players[0].id))
+        for player in players:
+            game.add_player(player)
+
+        self.push_screen(GameScreen(game, players[0].id))
 
 
 if __name__ == '__main__':
-    Scrabble().run()
+    ScrabbleApp().run()

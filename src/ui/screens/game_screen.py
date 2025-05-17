@@ -6,7 +6,7 @@ from textual.widgets import Header, Button
 from textual.containers import Vertical, Container
 
 from core.board import ROW_COUNT, COLUMN_COUNT
-from core.game import Game as CoreGame
+from core.game import Game
 from core.player import Player
 from ui.widgets.move_buttons import MoveButtons
 from ui.widgets.tile import Tile
@@ -15,8 +15,8 @@ from ui.widgets.field import Field
 from ui.widgets.tile_rack import TileRack
 
 
-class Game(Screen):
-    def __init__(self, game: CoreGame, player_id: UUID, *args, **kwargs):
+class GameScreen(Screen):
+    def __init__(self, game: Game, player_id: UUID, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.game = game
