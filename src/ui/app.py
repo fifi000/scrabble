@@ -3,8 +3,8 @@ from textual.app import App
 
 from core.enums.language import Language
 from core.game import Game
-from core.player import Player
 from ui.screens.game_screen import GameScreen
+from ui.screens.start_menu_screen import StartMenuScreen
 
 
 class ScrabbleApp(App[None]):
@@ -12,17 +12,15 @@ class ScrabbleApp(App[None]):
     TITLE = 'Scrabble'
 
     def on_mount(self) -> None:
-        game = Game(Language.POLISH)
+        self.push_screen(StartMenuScreen())
 
-        players = [
-            Player(uuid.uuid4(), 'Filip'),
-            Player(uuid.uuid4(), 'Zuzia'),
-        ]
+    def on_start_menu_screen_join_room(self, message: StartMenuScreen.JoinRoom) -> None:
+        self.switch_screen(GameScreen(Game(Language.POLISH), uuid.uuid4()))
 
-        for player in players:
-            game.add_player(player)
-
-        self.push_screen(GameScreen(game, players[0].id))
+    def on_start_menu_screen_create_room(
+        self, message: StartMenuScreen.CreateRoom
+    ) -> None:
+        self.switch_screen(GameScreen(Game(Language.POLISH), uuid.uuid4()))
 
 
 if __name__ == '__main__':
