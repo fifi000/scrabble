@@ -7,7 +7,9 @@ from typing import Any, Awaitable, Callable
 
 class GameClient:
     def __init__(
-        self, uri: str, on_server_message: Callable[[dict[str, Any]], Awaitable[None]]
+        self,
+        uri: str,
+        on_server_message: Callable[[dict[str, Any]], Awaitable[None]],
     ) -> None:
         self.uri = uri
         self.on_server_message = on_server_message

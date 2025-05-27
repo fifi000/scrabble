@@ -7,19 +7,20 @@ from textual.widgets import Input, Rule, Button
 from textual.message import Message
 
 
-class StartMenuScreen(Screen):
-    @dataclass
-    class FormInfo:
-        server_url: str
-        player_name: str
-        room_id: str | None = None
+@dataclass
+class FormInfo:
+    server_url: str
+    player_name: str
+    room_id: str | None = None
 
+
+class StartMenuScreen(Screen):
     class JoinRoom(Message):
-        def __init__(self, form_info: StartMenuScreen.FormInfo) -> None:
+        def __init__(self, form_info: FormInfo) -> None:
             super().__init__()
 
     class CreateRoom(Message):
-        def __init__(self, form_info: StartMenuScreen.FormInfo) -> None:
+        def __init__(self, form_info: FormInfo) -> None:
             super().__init__()
 
     def __init__(self, *args, **kwargs):
@@ -41,7 +42,7 @@ class StartMenuScreen(Screen):
             yield Button.warning('Create new room', id='create')
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        form_info = self.FormInfo(
+        form_info = FormInfo(
             server_url=self.query_one('#server_url', Input).value,
             player_name=self.query_one('#player_name', Input).value,
         )
