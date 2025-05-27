@@ -28,3 +28,4 @@
 
 - [ ] test app with 2 players
 - [ ] implement buttons logic
+- [ ] should i move server message data models / types to common module?
