@@ -2,14 +2,16 @@ import asyncio
 import json
 import websockets
 from websockets.asyncio.client import ClientConnection
-from typing import Any, Awaitable, Callable
+from typing import Awaitable, Callable
+
+from core.protocol.data_types import MessageData
 
 
 class GameClient:
     def __init__(
         self,
         uri: str,
-        on_server_message: Callable[[dict[str, Any]], Awaitable[None]],
+        on_server_message: Callable[[MessageData], Awaitable[None]],
     ) -> None:
         self.uri = uri
         self.on_server_message = on_server_message
@@ -29,6 +31,7 @@ class GameClient:
     async def _listen(self) -> None:
         assert self._websocket
 
-        async for message in self._websocket:
-            event: dict = json.loads(message)
-            await self.on_server_message(event)
+        async for ws_message in self._websocket:
+            message = MessageData.from_dict(json.loads(ws_message))
+
+            await self.on_server_message(message)

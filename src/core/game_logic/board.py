@@ -1,10 +1,10 @@
-from collections.abc import Iterable
 import string
+from collections.abc import Iterable
 
-from core.field import Field
-from core.enums.field_type import FieldType
-from core.tile import Tile
-from core.position import Position
+from core.game_logic.enums.field_type import FieldType
+from core.game_logic.field import Field
+from core.game_logic.position import Position
+from core.game_logic.tile import Tile
 
 
 ROW_COUNT, COLUMN_COUNT = 15, 15

@@ -1,7 +1,4 @@
-from dataclasses import dataclass
 from enum import StrEnum
-
-from server.base_data import BaseData
 
 
 class ServerMessageType(StrEnum):
@@ -12,12 +9,8 @@ class ServerMessageType(StrEnum):
     NEW_TILES = 'new_tiles'
 
 
-@dataclass
-class NewPlayerData(BaseData):
-    player_name: str
-    player_id: str
-
-
-@dataclass
-class NewTiles(BaseData):
-    tiles: list[dict]
+class ClientMessageType(StrEnum):
+    JOIN_ROOM = 'join_room'
+    START_GAME = 'start_game'
+    PLACE_TILES = 'place_tiles'
+    CREATE_ROOM = 'create_room'

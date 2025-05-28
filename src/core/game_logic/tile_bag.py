@@ -1,8 +1,8 @@
-from collections.abc import Iterable
 import random
-from typing import Generator
-from core.enums.language import Language
-from core.tile import Tile
+from collections.abc import Iterable
+
+from core.game_logic.enums.language import Language
+from core.game_logic.tile import Tile
 
 
 class TileBag:

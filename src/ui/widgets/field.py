@@ -1,5 +1,5 @@
 from __future__ import annotations
-from core.enums.field_type import FieldType
+from core.game_logic.enums.field_type import FieldType
 
 from textual.widgets import Static
 from textual.reactive import reactive

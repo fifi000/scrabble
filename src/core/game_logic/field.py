@@ -1,6 +1,6 @@
-from core.enums.field_type import FieldType
-from core.tile import Tile
-from core.position import Position
+from core.game_logic.enums.field_type import FieldType
+from core.game_logic.position import Position
+from core.game_logic.tile import Tile
 
 
 class Field:

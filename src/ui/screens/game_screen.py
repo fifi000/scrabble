@@ -5,9 +5,9 @@ from textual.app import ComposeResult
 from textual.widgets import Header, Button
 from textual.containers import Vertical, Container
 
-from core.board import ROW_COUNT, COLUMN_COUNT
-from core.game import Game
-from core.player import Player
+from core.game_logic.board import ROW_COUNT, COLUMN_COUNT
+from core.game_logic.game import Game
+from core.game_logic.player import Player
 from ui.widgets.move_buttons import MoveButtons
 from ui.widgets.tile import Tile
 from ui.widgets.board import Board

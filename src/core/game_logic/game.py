@@ -3,12 +3,12 @@ from __future__ import annotations
 from functools import wraps
 from uuid import UUID
 
-from core.board import Board
-from core.enums.language import Language
-from core.player import Player
-from core.position import Position
-from core.tile import Tile
-from core.tile_bag import TileBag
+from core.game_logic.board import Board
+from core.game_logic.enums.language import Language
+from core.game_logic.player import Player
+from core.game_logic.position import Position
+from core.game_logic.tile import Tile
+from core.game_logic.tile_bag import TileBag
 
 
 class Game:

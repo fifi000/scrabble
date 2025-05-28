@@ -38,3 +38,23 @@ TileRack {
   border: solid rgb(2, 59, 6);
   background: rgb(4, 105, 12);
 }
+
+StartMenuScreen {
+  Grid {
+      background: $boost;
+      padding: 1 2;
+      height: auto;
+      grid-size: 2;
+      grid-gutter: 1;
+      grid-columns: auto 1fr;
+      border: tall blank;
+      &:focus-within {
+          border: tall $accent;
+      }
+      Label {
+          width: 100%;
+          padding: 1;
+          text-align: right;
+      }
+  }
+}

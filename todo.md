@@ -21,6 +21,7 @@
 - [ ] make a browser app (for phones) to work as a controller
 - [ ] abstract `TilesGroup` to sortable collection
 - [ ] scoreboard
+- [ ] suggest available rooms
 - [ ] players list - with current player highlighted
 - [ ] predicted score - based on placed but not submitted tiles
 
@@ -28,4 +29,4 @@
 
 - [ ] test app with 2 players
 - [ ] implement buttons logic
-- [ ] should i move server message data models / types to common module?
+- [x] should i move server message data models / types to common module?

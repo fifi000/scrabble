@@ -1,5 +1,6 @@
 from uuid import UUID
-from core.tile import Tile
+
+from core.game_logic.tile import Tile
 
 
 class Player:
