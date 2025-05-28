@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scrabble WebSocket Client</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .panel {
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 5px;
+      }
+      textarea {
+        width: 100%;
+        height: 200px;
+        font-family: monospace;
+        margin-top: 10px;
+      }
+      button {
+        padding: 8px 15px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .connection-status {
+        padding: 5px 10px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      .connected {
+        background-color: #4caf50;
+        color: white;
+      }
+      .disconnected {
+        background-color: #f44336;
+        color: white;
+      }
+      .quick-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .quick-buttons button {
+        margin-top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Scrabble WebSocket Test Client</h1>
+
+      <div class="panel">
+        <h2>Connection</h2>
+        <div>
+          <span>Status: </span>
+          <span id="connection-status" class="connection-status disconnected"
+            >Disconnected</span
+          >
+        </div>
+        <button id="connect-btn">Connect</button>
+        <button id="disconnect-btn" disabled>Disconnect</button>
+      </div>
+
+      <div class="panel">
+        <h2>Send Message</h2>
+        <div class="quick-buttons">
+          <button id="create-room-btn">Create Room</button>
+          <button id="join-room-btn">Join Room</button>
+          <button id="start-game-btn">Start Game</button>
+          <button id="place-tiles-btn">Place Tiles</button>
+        </div>
+        <textarea
+          id="send-area"
+          placeholder="Enter JSON message to send..."
+        ></textarea>
+        <button id="send-btn" disabled>Send Message</button>
+      </div>
+
+      <div class="panel">
+        <h2>Received Messages</h2>
+        <button id="clear-btn">Clear</button>
+        <textarea
+          id="receive-area"
+          readonly
+          placeholder="Server responses will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <script>
+      let socket = null;
+
+      const connectBtn = document.getElementById("connect-btn");
+      const disconnectBtn = document.getElementById("disconnect-btn");
+      const sendBtn = document.getElementById("send-btn");
+      const clearBtn = document.getElementById("clear-btn");
+      const sendArea = document.getElementById("send-area");
+      const receiveArea = document.getElementById("receive-area");
+      const statusIndicator = document.getElementById("connection-status");
+
+      // Quick buttons
+      const createRoomBtn = document.getElementById("create-room-btn");
+      const joinRoomBtn = document.getElementById("join-room-btn");
+      const startGameBtn = document.getElementById("start-game-btn");
+      const placeTilesBtn = document.getElementById("place-tiles-btn");
+
+      // Connect to WebSocket server
+      connectBtn.addEventListener("click", () => {
+        if (socket !== null) {
+          appendToReceiveArea("Already connected!");
+          return;
+        }
+
+        try {
+          socket = new WebSocket("ws://localhost:8765");
+
+          socket.onopen = (event) => {
+            updateConnectionStatus(true);
+            appendToReceiveArea("Connected to server");
+          };
+
+          socket.onmessage = (event) => {
+            try {
+              // Try to parse and format the JSON nicely
+              const jsonData = JSON.parse(event.data);
+              appendToReceiveArea(
+                "RECEIVED: " + JSON.stringify(jsonData, null, 2)
+              );
+            } catch (e) {
+              appendToReceiveArea("RECEIVED: " + event.data);
+            }
+          };
+
+          socket.onclose = (event) => {
+            updateConnectionStatus(false);
+            appendToReceiveArea(`Disconnected from server: ${event.reason}`);
+            socket = null;
+          };
+
+          socket.onerror = (error) => {
+            appendToReceiveArea("WebSocket error: " + error.message);
+          };
+        } catch (err) {
+          appendToReceiveArea("Failed to connect: " + err.message);
+        }
+      });
+
+      // Disconnect from server
+      disconnectBtn.addEventListener("click", () => {
+        if (socket) {
+          socket.close();
+          updateConnectionStatus(false);
+        }
+      });
+
+      // Send message
+      sendBtn.addEventListener("click", () => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          appendToReceiveArea("Not connected to server");
+          return;
+        }
+
+        const message = sendArea.value.trim();
+        if (!message) {
+          appendToReceiveArea("Please enter a message to send");
+          return;
+        }
+
+        try {
+          // Validate JSON
+          const jsonObject = JSON.parse(message);
+          socket.send(message);
+          appendToReceiveArea("SENT: " + JSON.stringify(jsonObject, null, 2));
+        } catch (e) {
+          appendToReceiveArea("Invalid JSON: " + e.message);
+        }
+      });
+
+      // Clear received messages
+      clearBtn.addEventListener("click", () => {
+        receiveArea.value = "";
+      });
+
+      // Helper functions
+      function updateConnectionStatus(connected) {
+        if (connected) {
+          statusIndicator.textContent = "Connected";
+          statusIndicator.className = "connection-status connected";
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = false;
+          sendBtn.disabled = false;
+        } else {
+          statusIndicator.textContent = "Disconnected";
+          statusIndicator.className = "connection-status disconnected";
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+          sendBtn.disabled = true;
+        }
+      }
+
+      function appendToReceiveArea(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        receiveArea.value += `[${timestamp}] ${message}\n\n`;
+        receiveArea.scrollTop = receiveArea.scrollHeight;
+      }
+
+      // Quick action buttons
+      createRoomBtn.addEventListener("click", () => {
+        const roomNumber = prompt("Enter room number:", "1234");
+
+        if (roomNumber) {
+          const message = {
+            type: "create_room",
+            data: {
+              room_number: parseInt(roomNumber, 10),
+            },
+          };
+          sendArea.value = JSON.stringify(message, null, 2);
+        }
+      });
+
+      joinRoomBtn.addEventListener("click", () => {
+        const roomNumber = prompt("Enter room number:", "1234");
+        const playerName = prompt("Enter player name:", "Player1");
+
+        if (roomNumber && playerName) {
+          const message = {
+            type: "join_room",
+            data: {
+              room_number: parseInt(roomNumber, 10),
+              player_name: playerName,
+            },
+          };
+          sendArea.value = JSON.stringify(message, null, 2);
+        }
+      });
+
+      startGameBtn.addEventListener("click", () => {
+        const message = {
+          type: "start_game",
+        };
+        sendArea.value = JSON.stringify(message, null, 2);
+      });
+
+      placeTilesBtn.addEventListener("click", () => {
+        const message = {
+          type: "place_tiles",
+          data: {
+            tile_ids: [
+              prompt(
+                "Enter comma-separated tile IDs:",
+                "123e4567-e89b-12d3-a456-426614174000"
+              ),
+            ],
+            field_positions: [
+              [
+                parseInt(prompt("Enter X position:", "7")),
+                parseInt(prompt("Enter Y position:", "7")),
+              ],
+            ],
+          },
+        };
+        sendArea.value = JSON.stringify(message, null, 2);
+      });
+    </script>
+  </body>
+</html>
