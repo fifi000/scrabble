@@ -70,9 +70,10 @@ class ScrabbleApp(App[None]):
 
     def handle_new_game(self, data: ServerData.NewGameData) -> None:
         screen = GameScreen(
-            data.player_info.to_player(),
-            [pi.to_player() for pi in data.player_infos],
+            data.player,
+            data.players,
             data.board,
+            data.current_player_id,
         )
         self.switch_screen(screen)
 

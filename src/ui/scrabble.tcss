@@ -63,3 +63,13 @@ StartMenuScreen {
       }
   }
 }
+
+#move_buttons {
+  height: 5;
+  background: blue;
+}
+
+#score_board {
+  border: round green;
+  border-title-align: center;
+}

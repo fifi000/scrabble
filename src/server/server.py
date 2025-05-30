@@ -13,7 +13,7 @@ from core.protocol.data_types import (
     BoardData,
     ClientData,
     MessageData,
-    PlayerInfoData,
+    PlayerData,
     ServerData,
 )
 from core.protocol.message_types import ClientMessageType, ServerMessageType
@@ -60,7 +60,7 @@ async def handle_create_room(
         ServerMessageType.NEW_ROOM_CREATED,
         ServerData.NewRoomData(
             room.number,
-            PlayerInfoData.from_player(player),
+            PlayerData.from_player(player),
         ),
     )
 
@@ -77,7 +77,7 @@ async def handle_join_room(
         ServerMessageType.JOIN_ROOM,
         ServerData.JoinRoomData(
             room.number,
-            [PlayerInfoData.from_player(p) for p in players],
+            [PlayerData.from_player(p) for p in players],
         ),
     )
 
@@ -85,7 +85,7 @@ async def handle_join_room(
         room,
         ServerMessageType.NEW_PLAYER,
         ServerData.NewPlayerData(
-            PlayerInfoData.from_player(player),
+            PlayerData.from_player(player),
         ),
         player,
     )
@@ -114,8 +114,9 @@ async def handle_start_game(websocket: ServerConnection) -> None:
             ws,
             ServerMessageType.NEW_GAME,
             ServerData.NewGameData(
-                PlayerInfoData.from_player(player, with_tiles=True),
-                [PlayerInfoData.from_player(p) for p in room.game.players],
+                PlayerData.from_player(player, with_tiles=True),
+                room.game.current_player.id,
+                [PlayerData.from_player(p) for p in room.game.players],
                 BoardData.from_board(room.game.board),
             ),
         )

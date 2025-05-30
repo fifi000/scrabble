@@ -72,27 +72,22 @@ class MessageData(BaseData):
 
 
 @dataclass
-class PlayerInfoData(BaseData):
+class PlayerData(BaseData):
     id: str
     name: str
     tiles: list[TileData] | None = None
+    scores: list[int] | None = None
 
     @classmethod
-    def from_player(cls, player: Player, with_tiles: bool = False) -> PlayerInfoData:
+    def from_player(cls, player: Player, with_tiles: bool = False) -> PlayerData:
         obj = cls(player.id, player.name)
 
         if with_tiles:
             obj.tiles = [TileData.from_tile(tile) for tile in player.tiles]
 
+        obj.scores = player.scores
+
         return obj
-
-    def to_player(self) -> Player:
-        player = Player(self.name, self.id)
-
-        if self.tiles is not None:
-            player.tiles = [tile.to_tile() for tile in self.tiles]
-
-        return player
 
 
 @dataclass
@@ -108,9 +103,6 @@ class TileData(BaseData):
             symbol=tile.symbol,
             points=tile.points,
         )
-
-    def to_tile(self) -> Tile:
-        return Tile(self.symbol, self.points, self.id)
 
 
 @dataclass
@@ -173,21 +165,22 @@ class ServerData:
     @dataclass
     class NewRoomData(BaseData):
         room_number: int
-        player_info: PlayerInfoData
+        player_info: PlayerData
 
     @dataclass
     class JoinRoomData(BaseData):
         room_number: int
-        player_infos: list[PlayerInfoData]
+        player_infos: list[PlayerData]
 
     @dataclass
     class NewPlayerData(BaseData):
-        player_info: PlayerInfoData
+        player_info: PlayerData
 
     @dataclass
     class NewGameData(BaseData):
-        player_info: PlayerInfoData
-        player_infos: list[PlayerInfoData]
+        player: PlayerData
+        current_player_id: str
+        players: list[PlayerData]
         board: BoardData
 
     @dataclass
