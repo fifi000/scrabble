@@ -55,6 +55,14 @@ class Board:
         return grid
 
     @property
+    def rows(self) -> int:
+        return len(self.grid)
+
+    @property
+    def columns(self) -> int:
+        return len(self.grid[0])
+
+    @property
     def grid(self) -> list[list[Field]]:
         return self._grid
 

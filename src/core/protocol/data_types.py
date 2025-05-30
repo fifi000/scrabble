@@ -1,9 +1,14 @@
 from __future__ import annotations
-from dataclasses import asdict, dataclass, fields, is_dataclass
-import json
-from types import UnionType
-from typing import Type, TypeVar, get_type_hints, get_args
 
+import json
+from dataclasses import asdict, dataclass, fields, is_dataclass
+from types import UnionType
+from typing import Type, TypeVar, get_args, get_type_hints
+
+from core.game_logic.board import Board
+from core.game_logic.field import Field
+from core.game_logic.player import Player
+from core.game_logic.tile import Tile
 
 T = TypeVar('T', bound='BaseData')
 
@@ -26,13 +31,12 @@ class BaseData:
             # optional dataclass case
             if isinstance(field_type, UnionType):
                 field_type = next(
-                    (
-                        arg
-                        for arg in get_args(field_type)
-                        if arg is not type(None) and isinstance(arg, type)
-                    ),
-                    type(None),
+                    (arg for arg in get_args(field_type) if arg is not type(None)),
+                    None,
                 )
+
+                if field_type is None:
+                    continue
 
             # straight forward
             if (
@@ -67,6 +71,84 @@ class MessageData(BaseData):
     data: dict | None = None
 
 
+@dataclass
+class PlayerInfoData(BaseData):
+    id: str
+    name: str
+    tiles: list[TileData] | None = None
+
+    @classmethod
+    def from_player(cls, player: Player, with_tiles: bool = False) -> PlayerInfoData:
+        obj = cls(player.id, player.name)
+
+        if with_tiles:
+            obj.tiles = [TileData.from_tile(tile) for tile in player.tiles]
+
+        return obj
+
+    def to_player(self) -> Player:
+        player = Player(self.name, self.id)
+
+        if self.tiles is not None:
+            player.tiles = [tile.to_tile() for tile in self.tiles]
+
+        return player
+
+
+@dataclass
+class TileData(BaseData):
+    id: str
+    symbol: str
+    points: int
+
+    @classmethod
+    def from_tile(cls, tile: Tile) -> TileData:
+        return cls(
+            id=tile.id,
+            symbol=tile.symbol,
+            points=tile.points,
+        )
+
+    def to_tile(self) -> Tile:
+        return Tile(self.symbol, self.points, self.id)
+
+
+@dataclass
+class FieldData(BaseData):
+    row: int
+    column: int
+    type: int
+    tile: TileData | None = None
+
+    @classmethod
+    def from_field(cls, field: Field) -> FieldData:
+        obj = cls(
+            row=field.row,
+            column=field.column,
+            type=field.type.value,
+        )
+
+        if field.tile:
+            obj.tile = TileData.from_tile(field.tile)
+
+        return obj
+
+
+@dataclass
+class BoardData(BaseData):
+    fields: list[FieldData]
+    rows: int
+    columns: int
+
+    @classmethod
+    def from_board(cls, board: Board) -> BoardData:
+        return cls(
+            fields=[FieldData.from_field(field) for field in board.all_fields],
+            rows=board.rows,
+            columns=board.columns,
+        )
+
+
 class ClientData:
     @dataclass
     class CreateRoomData(BaseData):
@@ -89,36 +171,25 @@ class ClientData:
 
 class ServerData:
     @dataclass
-    class PlayerInfo(BaseData):
-        name: str
-        id: str
-
-    @dataclass
-    class Tile(BaseData):
-        tile_id: str
-        symbol: str
-        points: int
-
-    @dataclass
     class NewRoomData(BaseData):
         room_number: int
-        player_info: ServerData.PlayerInfo
+        player_info: PlayerInfoData
 
     @dataclass
     class JoinRoomData(BaseData):
         room_number: int
-        player_infos: list[ServerData.PlayerInfo]
+        player_infos: list[PlayerInfoData]
 
     @dataclass
     class NewPlayerData(BaseData):
-        player_info: ServerData.PlayerInfo
+        player_info: PlayerInfoData
 
     @dataclass
     class NewGameData(BaseData):
-        player_names: list[str]
-        player_info: ServerData.PlayerInfo
-        tiles: list[ServerData.Tile]
+        player_info: PlayerInfoData
+        player_infos: list[PlayerInfoData]
+        board: BoardData
 
     @dataclass
-    class NewTiles(BaseData):
+    class NewTilesData(BaseData):
         tiles: list[dict]

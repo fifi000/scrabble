@@ -4,10 +4,10 @@ import uuid
 
 
 class Tile:
-    def __init__(self, letter: str, points: int) -> None:
-        self.id: uuid.UUID = uuid.uuid4()
-        self.symbol: str = letter
+    def __init__(self, symbol: str, points: int, id: str | None = None) -> None:
+        self.symbol: str = symbol
         self.points: int = points
+        self.id: str = id if id is not None else str(uuid.uuid4())
 
         self.is_placed = False
 

@@ -1,20 +1,24 @@
 import asyncio
 import json
-import uuid
-from uuid import UUID
-
 import logging
+from uuid import UUID
 
 from websockets.asyncio.server import ServerConnection, serve
 
 from core.game_logic.enums.language import Language
 from core.game_logic.game import Game
 from core.game_logic.player import Player
-from core.protocol.data_types import MessageData, ClientData, ServerData
+from core.protocol.data_types import (
+    BaseData,
+    BoardData,
+    ClientData,
+    MessageData,
+    PlayerInfoData,
+    ServerData,
+)
 from core.protocol.message_types import ClientMessageType, ServerMessageType
 from server.connection_manager import ConnectionManager
 from server.room import Room
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,14 +27,14 @@ logging.basicConfig(
 )
 
 
-# room actions
+# --- room actions ---
 
 
 def join_room(
     websocket: ServerConnection, data: ClientData.JoinRoomData
 ) -> tuple[Player, Room]:
     logging.info(f'Joining player {data.player_name} to room {data.room_number}')
-    player = Player(uuid.uuid4(), data.player_name)
+    player = Player(data.player_name)
 
     room = ConnectionManager.join_room(data.room_number, websocket, player)
     logging.info(f'Player {data.player_name} joined room {data.room_number}')
@@ -51,17 +55,13 @@ async def handle_create_room(
         websocket, ClientData.JoinRoomData(data.room_number, data.player_name)
     )
 
-    await websocket.send(
-        MessageData(
-            ServerMessageType.NEW_ROOM_CREATED,
-            ServerData.NewRoomData(
-                room.number,
-                ServerData.PlayerInfo(
-                    player.name,
-                    str(player.id),
-                ),
-            ).to_dict(),
-        ).to_json()
+    await send_to_player(
+        websocket,
+        ServerMessageType.NEW_ROOM_CREATED,
+        ServerData.NewRoomData(
+            room.number,
+            PlayerInfoData.from_player(player),
+        ),
     )
 
 
@@ -72,56 +72,52 @@ async def handle_join_room(
 
     players = [p for ws, p in room]
 
-    await websocket.send(
-        MessageData(
-            ServerMessageType.JOIN_ROOM,
-            ServerData.JoinRoomData(
-                room.number, [ServerData.PlayerInfo(p.name, str(p.id)) for p in players]
-            ).to_dict(),
-        ).to_json()
+    await send_to_player(
+        websocket,
+        ServerMessageType.JOIN_ROOM,
+        ServerData.JoinRoomData(
+            room.number,
+            [PlayerInfoData.from_player(p) for p in players],
+        ),
     )
 
     await broadcast_to_players(
-        MessageData(
-            ServerMessageType.NEW_PLAYER,
-            ServerData.NewPlayerData(
-                ServerData.PlayerInfo(player.name, str(player.id))
-            ).to_dict(),
-        ),
         room,
+        ServerMessageType.NEW_PLAYER,
+        ServerData.NewPlayerData(
+            PlayerInfoData.from_player(player),
+        ),
         player,
     )
 
 
-# game actions
+# --- game actions ---
 
 
 async def handle_start_game(websocket: ServerConnection) -> None:
-    game = Game(Language.POLISH)
     assert (room := ConnectionManager.get_room_by_connection(websocket))
 
-    room.game = game
+    logging.info(f'Starting game in room {room.number}...')
+
+    room.game = Game(Language.POLISH)
 
     for ws, player in room:
-        game.add_player(player)
+        room.game.add_player(player)
 
-    game.start()
+    room.game.start()
+    logging.info(
+        f'Game started in room {room.number}, with {len(room.game.players)} players'
+    )
 
-    for websocket, player in room:
-        await websocket.send(
-            MessageData(
-                ServerMessageType.GAME_STARTED,
-                ServerData.NewTiles(
-                    [
-                        {
-                            'tile_id': str(tile.id),
-                            'symbol': tile.symbol,
-                            'points': tile.points,
-                        }
-                        for tile in player.tiles
-                    ]
-                ).to_dict(),
-            ).to_json()
+    for ws, player in room:
+        await send_to_player(
+            ws,
+            ServerMessageType.NEW_GAME,
+            ServerData.NewGameData(
+                PlayerInfoData.from_player(player, with_tiles=True),
+                [PlayerInfoData.from_player(p) for p in room.game.players],
+                BoardData.from_board(room.game.board),
+            ),
         )
 
 
@@ -137,44 +133,46 @@ async def handle_place_letters(
         player, list(map(UUID, data.tile_ids)), data.field_positions
     )
 
-    await broadcast_to_players(
-        MessageData(ServerMessageType.TILES_PLACED, data.to_dict()), room
-    )
+    await broadcast_to_players(room, ServerMessageType.TILES_PLACED, data)
 
-    await websocket.send(
-        MessageData(
-            ServerMessageType.NEW_TILES,
-            ServerData.NewTiles(
-                [
-                    {
-                        'tile_id': str(tile.id),
-                        'symbol': tile.symbol,
-                        'points': tile.points,
-                    }
-                    for tile in new_tiles
-                ]
-            ).to_dict(),
-        ).to_json()
+    await send_to_player(
+        websocket,
+        ServerMessageType.NEW_TILES,
+        ServerData.NewTilesData(
+            [
+                {
+                    'tile_id': str(tile.id),
+                    'symbol': tile.symbol,
+                    'points': tile.points,
+                }
+                for tile in new_tiles
+            ]
+        ),
     )
 
 
-# server broadcasting
+# --- server --> client communication ---
+
+
+async def send_to_player(
+    websocket: ServerConnection, type: str, data: BaseData
+) -> None:
+    await websocket.send(MessageData(type, data.to_dict()).to_json())
 
 
 async def broadcast_to_players(
-    message: MessageData,
     room: Room,
+    type: ServerMessageType,
+    data: BaseData,
     player_to_skip: Player | None = None,
 ) -> None:
     for websocket, player in room:
         if player_to_skip and player_to_skip.id == player.id:
             continue
-        await websocket.send(message.to_json())
+        await send_to_player(websocket, type, data)
 
 
 # client entry point
-
-
 async def game_server(websocket: ServerConnection) -> None:
     async for ws_message in websocket:
         logging.info(f'Received message: {ws_message}')

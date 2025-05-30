@@ -1,13 +1,12 @@
-from uuid import UUID
-
+import uuid
 from core.game_logic.tile import Tile
 
 
 class Player:
-    def __init__(self, id: UUID, name: str) -> None:
-        self.id = id
+    def __init__(self, name: str, id: str | None = None) -> None:
         self.name = name
 
+        self.id: str = id if id is not None else str(uuid.uuid4())
         self.tiles: list[Tile] = []
         self.scores: list[int] = []
 
@@ -18,7 +17,7 @@ class Player:
     def __repr__(self) -> str:
         return f'{self.name} - {self.score}'
 
-    def get_tile(self, tile_id: UUID) -> Tile:
+    def get_tile(self, tile_id: str) -> Tile:
         for tile in self.tiles:
             if tile.id == tile_id:
                 return tile

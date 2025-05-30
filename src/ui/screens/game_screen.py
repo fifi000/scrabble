@@ -1,50 +1,39 @@
-from uuid import UUID
-
-from textual.screen import Screen
 from textual.app import ComposeResult
-from textual.widgets import Header, Button
-from textual.containers import Vertical, Container
+from textual.containers import Container, Vertical, Horizontal
+from textual.screen import Screen
+from textual.widgets import Button, Header
 
-from core.game_logic.board import ROW_COUNT, COLUMN_COUNT
-from core.game_logic.game import Game
+from core.game_logic.enums.field_type import FieldType
 from core.game_logic.player import Player
-from ui.widgets.move_buttons import MoveButtons
-from ui.widgets.tile import Tile
+from core.protocol.data_types import BoardData
 from ui.widgets.board import Board
 from ui.widgets.field import Field
+from ui.widgets.tile import Tile
 from ui.widgets.tile_rack import TileRack
 
 
 class GameScreen(Screen):
-    def __init__(self, game: Game, player_id: UUID, *args, **kwargs):
+    def __init__(
+        self, player: Player, players: list[Player], board: BoardData, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
-        self.game = game
-        self.player_id = player_id
+        self.player = player
+        self.players = players
 
         self.placed_tiles: list[tuple[Tile, Field]] = []
 
-        # board
-        self.board = self._get_board()
+        self.board = self._get_board(board)
 
         # available letters
         self.tile_rack = TileRack(
             [Tile(tile.symbol, tile.points) for tile in self.player.tiles]
         )
 
-        # move buttons
-        self.move_buttons = MoveButtons()
+    def _get_board(self, board: BoardData) -> Board:
+        fields = [Field(FieldType(field.type)) for field in board.fields]
 
-    @property
-    def player(self) -> Player:
-        return self.game.get_player(self.player_id)
-
-    def _get_board(self) -> Board:
-        fields = [
-            Field(game_field.type) for row in self.game.board.grid for game_field in row
-        ]
-
-        return Board(ROW_COUNT, COLUMN_COUNT, fields)
+        return Board(board.rows, board.columns, fields)
 
     def compose(self) -> ComposeResult:
         yield Header(name='Scrabble')
@@ -53,7 +42,10 @@ class GameScreen(Screen):
             yield self.board
             with Vertical():
                 yield self.tile_rack
-                yield self.move_buttons
+                with Horizontal():
+                    yield Button.success('Submit', id='submit')
+                    yield Button.warning('Exchange', id='exchange')
+                    yield Button.error('Skip', id='skip')
 
     def place_tile(self, tile: Tile, field: Field) -> None:
         if field.tile:

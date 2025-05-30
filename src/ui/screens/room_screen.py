@@ -3,6 +3,7 @@ from __future__ import annotations
 from textual.reactive import reactive
 from textual.app import ComposeResult
 from textual.screen import Screen
+from textual.message import Message
 from textual.widgets import (
     Button,
     Label,
@@ -12,6 +13,9 @@ from textual.widgets import (
 
 
 class RoomScreen(Screen):
+    class StartGame(Message):
+        pass
+
     player_names: reactive[list[str]] = reactive(list, recompose=True)
 
     def __init__(
@@ -29,6 +33,16 @@ class RoomScreen(Screen):
     def compose(self) -> ComposeResult:
         self.border_title = f'Room {self.room_number}'
 
+        yield Label(f'Players ({len(self.player_names)})')
         yield ListView(*[ListItem(Label(name)) for name in self.player_names])
 
-        yield Button.success('Start Game')
+        yield Button.success('Start Game', id='start_game')
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        match event.button.id:
+            case 'start_game':
+                self.loading = True
+                self.post_message(self.StartGame())
+
+            case _:
+                raise Exception(f'Unsupported button id {event.button.id!r}')

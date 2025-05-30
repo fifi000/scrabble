@@ -1,8 +1,9 @@
 from textual.app import App
 
-from core.protocol.data_types import MessageData, ClientData, ServerData
+from core.protocol.data_types import ClientData, MessageData, ServerData
 from core.protocol.message_types import ClientMessageType, ServerMessageType
 from ui.game_client import GameClient
+from ui.screens.game_screen import GameScreen
 from ui.screens.room_screen import RoomScreen
 from ui.screens.start_menu_screen import StartMenuScreen
 
@@ -20,7 +21,12 @@ class ScrabbleApp(App[None]):
     def on_mount(self) -> None:
         self.push_screen(StartMenuScreen())
 
-    # StartMenuScreen - events
+    # --- RoomScreen - events ---
+
+    async def on_room_screen_start_game(self, message: RoomScreen.StartGame):
+        await self.game_client.send(type=ClientMessageType.START_GAME)
+
+    # --- StartMenuScreen - events ---
 
     async def on_start_menu_screen_join_room(
         self, message: StartMenuScreen.JoinRoom
@@ -48,6 +54,8 @@ class ScrabbleApp(App[None]):
             ).to_dict(),
         )
 
+    # --- handlers ---
+
     def handle_new_room(self, data: ServerData.NewRoomData) -> None:
         screen = RoomScreen(data.room_number, [data.player_info.name])
         self.switch_screen(screen)
@@ -59,6 +67,14 @@ class ScrabbleApp(App[None]):
     def handle_new_player(self, data: ServerData.NewPlayerData) -> None:
         assert isinstance(self.screen, RoomScreen)
         self.screen.add_player(data.player_info.name)
+
+    def handle_new_game(self, data: ServerData.NewGameData) -> None:
+        screen = GameScreen(
+            data.player_info.to_player(),
+            [pi.to_player() for pi in data.player_infos],
+            data.board,
+        )
+        self.switch_screen(screen)
 
     def handle_server_message(self, message: MessageData) -> None:
         match message.type:
@@ -76,6 +92,11 @@ class ScrabbleApp(App[None]):
                 assert message.data
                 data = ServerData.JoinRoomData.from_dict(message.data)
                 self.handle_join_room(data)
+
+            case ServerMessageType.NEW_GAME:
+                assert message.data
+                data = ServerData.NewGameData.from_dict(message.data)
+                self.handle_new_game(data)
 
             case _:
                 raise Exception(f'Unsupported value: {message.type!r}')

@@ -24,11 +24,12 @@ class GameClient:
 
         asyncio.create_task(self._listen())
 
-    async def send(self, type: str, data: dict) -> None:
+    async def send(self, type: str, data: dict | None = None) -> None:
         assert self._websocket
 
-        message = json.dumps({'type': type, 'data': data})
-        await self._websocket.send(message)
+        message = MessageData(type, data)
+
+        await self._websocket.send(message.to_json())
 
     async def _listen(self) -> None:
         assert self._websocket
