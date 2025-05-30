@@ -105,23 +105,29 @@ class GameScreen(Screen):
                 yield self.score_board
 
     def place_tile(self, tile: Tile, field: Field) -> None:
-        if field.tile:
-            return
-
         field.tile = tile
-        self.tile_rack.remove(tile)
-
+        self.tile_rack.refresh()
         self.placed_tiles.append((tile, field))
 
     def submit_word(self) -> None:
         pass
 
     def on_board_field_selected(self, message: Board.FieldSelected) -> None:
-        field = message.field
         tile = self.tile_rack.get_selected()
 
-        if field and tile:
-            self.place_tile(tile, field)
+        # remove placed tile from board
+        if tile is None and message.field.tile is not None:
+            message.field.tile.enabled = False
+            message.field.tile = None
+        # place new tile
+        elif tile is not None and message.field.tile is None:
+            tile.enabled = False
+            self.place_tile(tile, message.field)
+        # replace tile
+        elif tile is not None and message.field.tile is not None:
+            tile.enabled = True
+            message.field.tile.enabled = False
+            self.place_tile(tile, message.field)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         match event.button.id:

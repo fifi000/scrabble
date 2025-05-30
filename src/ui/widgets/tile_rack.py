@@ -19,7 +19,7 @@ class TileRack(Horizontal):
 
     def get_selected(self) -> Tile | None:
         for tile in self.tiles:
-            if tile.has_class('highlighted'):
+            if tile.selected:
                 return tile
 
         return None
@@ -36,9 +36,9 @@ class TileRack(Horizontal):
         if isinstance(event.control, Tile):
             for tile in self.tiles:
                 if tile == event.control:
-                    tile.toggle_class('highlighted')
+                    tile.selected = not tile.selected
                 else:
-                    tile.remove_class('highlighted')
+                    tile.selected = False
 
     def on_draggable_drag_ended(self, message: Draggable.DragEnded) -> None:
         # reorder tiles

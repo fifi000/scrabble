@@ -16,6 +16,32 @@ class Tile(Draggable):
         self.symbol = symbol
         self.points = _get_points_symbol(points)
 
+        self._enabled = True
+        self._selected = False
+
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._enabled = value
+
+        if not self._enabled:
+            self.selected = False
+
+    @property
+    def selected(self) -> bool:
+        return self._selected
+
+    @selected.setter
+    def selected(self, value: bool) -> None:
+        self._selected = self.enabled and value
+        if self._selected:
+            self.add_class('highlighted')
+        else:
+            self.remove_class('highlighted')
+
     @property
     def text(self) -> str:
         return self.symbol + self.points
