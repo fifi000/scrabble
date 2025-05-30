@@ -9,6 +9,10 @@ class ConnectionManager:
     _rooms: dict[int, Room] = {}
 
     @staticmethod
+    def clear() -> None:
+        ConnectionManager._rooms.clear()
+
+    @staticmethod
     def create_room(room_number: int) -> Room:
         assert room_number not in ConnectionManager._rooms
 

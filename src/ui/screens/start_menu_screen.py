@@ -19,27 +19,28 @@ class FormInfo:
 class StartMenuScreen(Screen):
     class JoinRoom(Message):
         def __init__(self, form_info: FormInfo) -> None:
-            self.form_info = form_info
             super().__init__()
+            self.form_info = form_info
 
     class CreateRoom(Message):
         def __init__(self, form_info: FormInfo) -> None:
-            self.form_info = form_info
             super().__init__()
+            self.form_info = form_info
 
     def compose(self) -> ComposeResult:
         with Grid():
             yield Label('Server URL')
             yield Input(
                 placeholder='ws://localhost:8765',
+                value='ws://localhost:8765',
                 id='server_url',
             )
 
             yield Label('Player name')
-            yield Input(id='player_name')
+            yield Input(id='player_name', value='feefee')
 
             yield Label('Room number')
-            yield Input(id='room_number', type='integer')
+            yield Input(id='room_number', value='1234', type='integer')
 
             yield Button.success('Join', id='join')
             yield Button.warning('Create', id='create')
@@ -48,14 +49,16 @@ class StartMenuScreen(Screen):
         form_info = FormInfo(
             server_url=self.query_one('#server_url', Input).value,
             player_name=self.query_one('#player_name', Input).value,
+            room_number=int(self.query_one('#room_number', Input).value),
         )
 
         match event.button.id:
             case 'join':
-                form_info.room_number = int(self.query_one('#room_number', Input).value)
+                self.loading = True
                 self.post_message(self.JoinRoom(form_info))
 
             case 'create':
+                self.loading = True
                 self.post_message(self.CreateRoom(form_info))
 
             case _:

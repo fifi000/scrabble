@@ -3,49 +3,93 @@ import json
 import uuid
 from uuid import UUID
 
+import logging
+
 from websockets.asyncio.server import ServerConnection, serve
 
 from core.game_logic.enums.language import Language
 from core.game_logic.game import Game
 from core.game_logic.player import Player
-from core.protocol.data_types import (
-    MessageData,
-    CreateRoomData,
-    JoinRoomData,
-    NewPlayerData,
-    NewTiles,
-    PlaceTilesData,
-)
+from core.protocol.data_types import MessageData, ClientData, ServerData
 from core.protocol.message_types import ClientMessageType, ServerMessageType
 from server.connection_manager import ConnectionManager
 from server.room import Room
 
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
+
+
 # room actions
 
 
-async def handle_create_room(websocket: ServerConnection, data: CreateRoomData) -> None:
+def join_room(
+    websocket: ServerConnection, data: ClientData.JoinRoomData
+) -> tuple[Player, Room]:
+    logging.info(f'Joining player {data.player_name} to room {data.room_number}')
+    player = Player(uuid.uuid4(), data.player_name)
+
+    room = ConnectionManager.join_room(data.room_number, websocket, player)
+    logging.info(f'Player {data.player_name} joined room {data.room_number}')
+
+    return player, room
+
+
+async def handle_create_room(
+    websocket: ServerConnection, data: ClientData.CreateRoomData
+) -> None:
+    logging.info(f'Creating room {data.room_number} for player {data.player_name}')
+
     room = ConnectionManager.create_room(data.room_number)
+
+    logging.info(f'Room {data.room_number} created')
+
+    player, room = join_room(
+        websocket, ClientData.JoinRoomData(data.room_number, data.player_name)
+    )
 
     await websocket.send(
         MessageData(
             ServerMessageType.NEW_ROOM_CREATED,
-            {'room_number': room.number},
+            ServerData.NewRoomData(
+                room.number,
+                ServerData.PlayerInfo(
+                    player.name,
+                    str(player.id),
+                ),
+            ).to_dict(),
         ).to_json()
     )
 
 
-async def handle_join_room(websocket: ServerConnection, data: JoinRoomData) -> None:
-    player = Player(uuid.uuid4(), data.player_name)
+async def handle_join_room(
+    websocket: ServerConnection, data: ClientData.JoinRoomData
+) -> None:
+    player, room = join_room(websocket, data)
 
-    room = ConnectionManager.join_room(data.room_number, websocket, player)
+    players = [p for ws, p in room]
+
+    await websocket.send(
+        MessageData(
+            ServerMessageType.JOIN_ROOM,
+            ServerData.JoinRoomData(
+                room.number, [ServerData.PlayerInfo(p.name, str(p.id)) for p in players]
+            ).to_dict(),
+        ).to_json()
+    )
 
     await broadcast_to_players(
         MessageData(
             ServerMessageType.NEW_PLAYER,
-            NewPlayerData(player.name, str(player.id)).to_dict(),
+            ServerData.NewPlayerData(
+                ServerData.PlayerInfo(player.name, str(player.id))
+            ).to_dict(),
         ),
         room,
+        player,
     )
 
 
@@ -67,7 +111,7 @@ async def handle_start_game(websocket: ServerConnection) -> None:
         await websocket.send(
             MessageData(
                 ServerMessageType.GAME_STARTED,
-                NewTiles(
+                ServerData.NewTiles(
                     [
                         {
                             'tile_id': str(tile.id),
@@ -81,7 +125,9 @@ async def handle_start_game(websocket: ServerConnection) -> None:
         )
 
 
-async def handle_place_letters(websocket: ServerConnection, data: PlaceTilesData):
+async def handle_place_letters(
+    websocket: ServerConnection, data: ClientData.PlaceTilesData
+):
     assert (room := ConnectionManager.get_room_by_connection(websocket))
     assert room.game
 
@@ -98,7 +144,7 @@ async def handle_place_letters(websocket: ServerConnection, data: PlaceTilesData
     await websocket.send(
         MessageData(
             ServerMessageType.NEW_TILES,
-            NewTiles(
+            ServerData.NewTiles(
                 [
                     {
                         'tile_id': str(tile.id),
@@ -115,8 +161,14 @@ async def handle_place_letters(websocket: ServerConnection, data: PlaceTilesData
 # server broadcasting
 
 
-async def broadcast_to_players(message: MessageData, room: Room) -> None:
+async def broadcast_to_players(
+    message: MessageData,
+    room: Room,
+    player_to_skip: Player | None = None,
+) -> None:
     for websocket, player in room:
+        if player_to_skip and player_to_skip.id == player.id:
+            continue
         await websocket.send(message.to_json())
 
 
@@ -125,17 +177,18 @@ async def broadcast_to_players(message: MessageData, room: Room) -> None:
 
 async def game_server(websocket: ServerConnection) -> None:
     async for ws_message in websocket:
+        logging.info(f'Received message: {ws_message}')
         message = MessageData.from_dict(json.loads(ws_message))
 
         match message.type:
             case ClientMessageType.CREATE_ROOM:
                 assert message.data
-                data = CreateRoomData.from_dict(message.data)
+                data = ClientData.CreateRoomData.from_dict(message.data)
                 await handle_create_room(websocket, data)
 
             case ClientMessageType.JOIN_ROOM:
                 assert message.data
-                data = JoinRoomData.from_dict(message.data)
+                data = ClientData.JoinRoomData.from_dict(message.data)
                 await handle_join_room(websocket, data)
 
             case ClientMessageType.START_GAME:
@@ -143,7 +196,7 @@ async def game_server(websocket: ServerConnection) -> None:
 
             case ClientMessageType.PLACE_TILES:
                 assert message.data
-                data = PlaceTilesData.from_dict(message.data)
+                data = ClientData.PlaceTilesData.from_dict(message.data)
                 await handle_place_letters(websocket, data)
 
             case _:
@@ -151,8 +204,15 @@ async def game_server(websocket: ServerConnection) -> None:
 
 
 async def main():
-    async with serve(game_server, 'localhost', 8765) as server:
-        await server.serve_forever()
+    while True:
+        try:
+            ConnectionManager.clear()
+            async with serve(game_server, 'localhost', 8765) as server:
+                await server.serve_forever()
+        except Exception as e:
+            logging.error(f'Error in server: {e}')
+            await asyncio.sleep(3)
+            logging.info('Restarting server...')
 
 
 if __name__ == '__main__':

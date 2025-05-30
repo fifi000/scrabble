@@ -39,6 +39,11 @@ TileRack {
   background: rgb(4, 105, 12);
 }
 
+RoomScreen {
+  border: round;
+  border-title-align: center;
+}
+
 StartMenuScreen {
   Grid {
       background: $boost;

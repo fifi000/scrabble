@@ -1,9 +1,11 @@
-from dataclasses import asdict, dataclass
+from __future__ import annotations
+from dataclasses import asdict, dataclass, fields, is_dataclass
 import json
-from typing import Type, TypeVar
+from types import UnionType
+from typing import Type, TypeVar, get_type_hints, get_args
 
 
-T = TypeVar('T')
+T = TypeVar('T', bound='BaseData')
 
 
 @dataclass
@@ -14,7 +16,43 @@ class BaseData:
 
     @classmethod
     def from_dict(cls: Type[T], data: dict) -> T:
-        return cls(**data)
+        fieldtypes = get_type_hints(cls)
+        init_kwargs = {}
+
+        for field in fields(cls):
+            init_kwargs[field.name] = value = data.get(field.name)
+            field_type: type = fieldtypes[field.name]
+
+            # optional dataclass case
+            if isinstance(field_type, UnionType):
+                field_type = next(
+                    (
+                        arg
+                        for arg in get_args(field_type)
+                        if arg is not type(None) and isinstance(arg, type)
+                    ),
+                    type(None),
+                )
+
+            # straight forward
+            if (
+                isinstance(value, dict)
+                and is_dataclass(field_type)
+                and issubclass(field_type, BaseData)
+            ):
+                init_kwargs[field.name] = field_type.from_dict(value)
+            # list of dataclasses
+            elif (
+                isinstance(value, list)
+                and is_dataclass(field_type := get_args(field_type)[0])
+                and issubclass(field_type, BaseData)
+            ):
+                init_kwargs[field.name] = [
+                    field_type.from_dict(item) if isinstance(item, dict) else item
+                    for item in value
+                ]
+
+        return cls(**init_kwargs)
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict())
@@ -29,40 +67,58 @@ class MessageData(BaseData):
     data: dict | None = None
 
 
-# client data
+class ClientData:
+    @dataclass
+    class CreateRoomData(BaseData):
+        room_number: int
+        player_name: str
 
+    @dataclass
+    class JoinRoomData(BaseData):
+        room_number: int
+        player_name: str
 
-@dataclass
-class CreateRoomData(BaseData):
-    room_number: int
-
-
-@dataclass
-class JoinRoomData(BaseData):
-    room_number: int
-    player_name: str
-
-
-@dataclass
-class PlaceTilesData(BaseData):
-    tile_ids: list[str]
-    field_positions: list[tuple[int, int]]
+    @dataclass
+    class PlaceTilesData(BaseData):
+        tile_ids: list[str]
+        field_positions: list[tuple[int, int]]
 
 
 # server data
 
 
-@dataclass
-class NewRoomData(BaseData):
-    room_number: int
+class ServerData:
+    @dataclass
+    class PlayerInfo(BaseData):
+        name: str
+        id: str
 
+    @dataclass
+    class Tile(BaseData):
+        tile_id: str
+        symbol: str
+        points: int
 
-@dataclass
-class NewPlayerData(BaseData):
-    player_name: str
-    player_id: str
+    @dataclass
+    class NewRoomData(BaseData):
+        room_number: int
+        player_info: ServerData.PlayerInfo
 
+    @dataclass
+    class JoinRoomData(BaseData):
+        room_number: int
+        player_infos: list[ServerData.PlayerInfo]
 
-@dataclass
-class NewTiles(BaseData):
-    tiles: list[dict]
+    @dataclass
+    class NewPlayerData(BaseData):
+        player_info: ServerData.PlayerInfo
+
+    @dataclass
+    class NewGameData(BaseData):
+        player_names: list[str]
+        player_info: ServerData.PlayerInfo
+        tiles: list[ServerData.Tile]
+
+    @dataclass
+    class NewTiles(BaseData):
+        tiles: list[dict]
