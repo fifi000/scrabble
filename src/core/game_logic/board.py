@@ -6,7 +6,6 @@ from core.game_logic.field import Field
 from core.game_logic.position import Position
 from core.game_logic.tile import Tile
 
-
 ROW_COUNT, COLUMN_COUNT = 15, 15
 
 # rows
@@ -72,15 +71,27 @@ class Board:
             for cell in row:
                 yield cell
 
-    def get_field(self, position: Position) -> Field:
-        if not (0 <= position.row < len(self._grid)):
+    def try_get_field(self, row: int, column: int) -> Field | None:
+        try:
+            return self.get_field(row, column)
+        except IndexError:
+            return None
+
+    def get_field(self, row: int, column: int) -> Field:
+        if not (0 <= row < len(self._grid)):
             raise IndexError('Given row is not valid.')
 
-        if not (0 <= position.column < len(self._grid[position.row])):
+        if not (0 <= column < len(self._grid[row])):
             raise IndexError('Given column is not valid.')
 
-        return self._grid[position.row][position.column]
+        return self._grid[row][column]
 
-    def place_tiles(self, tiles: list[Tile], positions: list[Position]) -> None:
+    def place_tiles(self, tiles: list[Tile], positions: list[Position]) -> list[Field]:
+        fields: list[Field] = []
+
         for tile, position in zip(tiles, positions, strict=True):
-            self.get_field(position).tile = tile
+            field = self.get_field(*position)
+            field.tile = tile
+            fields.append(field)
+
+        return fields

@@ -1,10 +1,13 @@
+from collections.abc import Iterable
+from itertools import zip_longest
+
 from rich.style import Style
 from rich.text import Text
-from textual.reactive import reactive
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, VerticalGroup
 from textual.message import Message
 from textual.screen import Screen
+from textual.widget import Widget
 from textual.widgets import Button, DataTable, Header
 
 from ui.models import BoardModel, PlayerModel
@@ -58,6 +61,41 @@ class GameScreen(Screen):
     def is_my_turn(self) -> bool:
         return self.player_model.id == self.current_player_id
 
+    def _get_buttons(self) -> Iterable[Widget]:
+        with Horizontal(id='move_buttons'):
+            yield Button.success(
+                'Submit',
+                id='submit',
+                disabled=(not self.is_my_turn),
+            )
+            yield Button.warning(
+                'Exchange',
+                id='exchange',
+                disabled=(not self.is_my_turn),
+            )
+            yield Button.error(
+                'Skip',
+                id='skip',
+                disabled=(not self.is_my_turn),
+            )
+
+    def _get_score_board(self) -> Iterable[Widget]:
+        for player in self.player_models:
+            self.score_board.add_column(
+                Text(
+                    text=player.name,
+                    style=Style(underline=(player.id == self.current_player_id)),
+                )
+            )
+
+        players_scores = [player.scores or [] for player in self.player_models]
+        rows = zip_longest(*players_scores, fillvalue='')
+
+        for i, row in enumerate(rows, start=1):
+            self.score_board.add_row(*row, label=str(i))
+
+        yield self.score_board
+
     def compose(self) -> ComposeResult:
         yield Header(name='Scrabble')
 
@@ -65,39 +103,8 @@ class GameScreen(Screen):
             yield self.board
             with VerticalGroup():
                 yield self.tile_rack
-                with Horizontal(id='move_buttons'):
-                    yield Button.success(
-                        'Submit',
-                        id='submit',
-                        disabled=(not self.is_my_turn),
-                    )
-                    yield Button.warning(
-                        'Exchange',
-                        id='exchange',
-                        disabled=(not self.is_my_turn),
-                    )
-                    yield Button.error(
-                        'Skip',
-                        id='skip',
-                        disabled=(not self.is_my_turn),
-                    )
-
-                for player in self.player_models:
-                    self.score_board.add_column(
-                        Text(
-                            text=player.name,
-                            style=Style(
-                                underline=(player.id == self.current_player_id)
-                            ),
-                        )
-                    )
-
-                players_scores = [player.scores or [] for player in self.player_models]
-
-                for i, row in enumerate(zip(*players_scores), start=1):
-                    self.score_board.add_row(*row, label=str(i))
-
-                yield self.score_board
+                yield from self._get_buttons()
+                yield from self._get_score_board()
 
     def update_player(self, player_model: PlayerModel) -> None:
         self.player_model = player_model

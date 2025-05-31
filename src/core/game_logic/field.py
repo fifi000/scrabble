@@ -10,6 +10,7 @@ class Field:
         self.position: Position = position
         self.type: FieldType = type
         self.tile: Tile | None = tile
+        self.just_placed_tile = False
 
     @property
     def is_empty(self) -> bool:
