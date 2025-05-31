@@ -7,7 +7,7 @@ class Tile:
     def __init__(self, symbol: str, points: int, id: str | None = None) -> None:
         self.symbol: str = symbol
         self.points: int = points
-        self.id: str = id if id is not None else str(uuid.uuid4())
+        self.id: str = id or str(uuid.uuid4())
 
         self.is_placed = False
 

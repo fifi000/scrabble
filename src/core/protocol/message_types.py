@@ -6,7 +6,7 @@ class ServerMessageType(StrEnum):
     NEW_PLAYER = 'new_player'
     JOIN_ROOM = 'join_room'
     NEW_GAME = 'new_game'
-    TILES_PLACED = 'tiles_placed'
+    NEXT_TURN = 'next_turn'
     NEW_TILES = 'new_tiles'
 
 

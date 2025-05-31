@@ -1,78 +1,22 @@
 from __future__ import annotations
 
-import json
-from dataclasses import asdict, dataclass, fields, is_dataclass
-from types import UnionType
-from typing import Type, TypeVar, get_args, get_type_hints
+from dataclasses import dataclass
 
+from core.data_model import DataModel
 from core.game_logic.board import Board
 from core.game_logic.field import Field
 from core.game_logic.player import Player
 from core.game_logic.tile import Tile
 
-T = TypeVar('T', bound='BaseData')
-
 
 @dataclass
-class BaseData:
-    @classmethod
-    def from_json(cls: Type[T], json_string: str) -> T:
-        return cls(**json.loads(json_string))
-
-    @classmethod
-    def from_dict(cls: Type[T], data: dict) -> T:
-        fieldtypes = get_type_hints(cls)
-        init_kwargs = {}
-
-        for field in fields(cls):
-            init_kwargs[field.name] = value = data.get(field.name)
-            field_type: type = fieldtypes[field.name]
-
-            # optional dataclass case
-            if isinstance(field_type, UnionType):
-                field_type = next(
-                    (arg for arg in get_args(field_type) if arg is not type(None)),
-                    None,
-                )
-
-                if field_type is None:
-                    continue
-
-            # straight forward
-            if (
-                isinstance(value, dict)
-                and is_dataclass(field_type)
-                and issubclass(field_type, BaseData)
-            ):
-                init_kwargs[field.name] = field_type.from_dict(value)
-            # list of dataclasses
-            elif (
-                isinstance(value, list)
-                and is_dataclass(field_type := get_args(field_type)[0])
-                and issubclass(field_type, BaseData)
-            ):
-                init_kwargs[field.name] = [
-                    field_type.from_dict(item) if isinstance(item, dict) else item
-                    for item in value
-                ]
-
-        return cls(**init_kwargs)
-
-    def to_json(self) -> str:
-        return json.dumps(self.to_dict())
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-
-@dataclass
-class MessageData(BaseData):
+class MessageData(DataModel):
     type: str
     data: dict | None = None
 
 
 @dataclass
-class PlayerData(BaseData):
+class PlayerData(DataModel):
     id: str
     name: str
     tiles: list[TileData] | None = None
@@ -91,7 +35,7 @@ class PlayerData(BaseData):
 
 
 @dataclass
-class TileData(BaseData):
+class TileData(DataModel):
     id: str
     symbol: str
     points: int
@@ -106,7 +50,7 @@ class TileData(BaseData):
 
 
 @dataclass
-class FieldData(BaseData):
+class FieldData(DataModel):
     row: int
     column: int
     type: int
@@ -127,10 +71,10 @@ class FieldData(BaseData):
 
 
 @dataclass
-class BoardData(BaseData):
-    fields: list[FieldData]
+class BoardData(DataModel):
     rows: int
     columns: int
+    fields: list[FieldData]
 
     @classmethod
     def from_board(cls, board: Board) -> BoardData:
@@ -143,17 +87,17 @@ class BoardData(BaseData):
 
 class ClientData:
     @dataclass
-    class CreateRoomData(BaseData):
+    class CreateRoomData(DataModel):
         room_number: int
         player_name: str
 
     @dataclass
-    class JoinRoomData(BaseData):
+    class JoinRoomData(DataModel):
         room_number: int
         player_name: str
 
     @dataclass
-    class PlaceTilesData(BaseData):
+    class PlaceTilesData(DataModel):
         tile_ids: list[str]
         field_positions: list[tuple[int, int]]
 
@@ -163,26 +107,29 @@ class ClientData:
 
 class ServerData:
     @dataclass
-    class NewRoomData(BaseData):
+    class NewRoomData(DataModel):
         room_number: int
         player_info: PlayerData
 
     @dataclass
-    class JoinRoomData(BaseData):
+    class JoinRoomData(DataModel):
         room_number: int
         player_infos: list[PlayerData]
 
     @dataclass
-    class NewPlayerData(BaseData):
+    class NewPlayerData(DataModel):
         player_info: PlayerData
 
     @dataclass
-    class NewGameData(BaseData):
+    class NewGameData(DataModel):
         player: PlayerData
         current_player_id: str
         players: list[PlayerData]
         board: BoardData
 
     @dataclass
-    class NewTilesData(BaseData):
-        tiles: list[dict]
+    class NextTurnData(DataModel):
+        player: PlayerData
+        current_player_id: str
+        players: list[PlayerData]
+        board: BoardData

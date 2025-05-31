@@ -81,22 +81,18 @@ class Game:
     def place_tiles(
         self,
         player: Player,
-        tile_ids: list[UUID],
-        field_positions: list[tuple[int, int]],
-    ) -> list[Tile]:
-        positions = [Position(x, y) for (x, y) in field_positions]
-
-        if not self.is_valid_word_placement(positions):
+        tile_ids: list[str],
+        field_positions: list[Position],
+    ) -> None:
+        if not self.is_valid_word_placement(field_positions):
             raise Exception('Given move is not valid.')
 
         tiles = [player.get_tile(tile_id) for tile_id in tile_ids]
 
-        self.board.place_tiles(tiles, positions)
+        self.board.place_tiles(tiles, field_positions)
 
         for tile in tiles:
             player.tiles.remove(tile)
 
         new_tiles = self.letter_bag.scrabble(len(tiles))
         player.tiles.extend(new_tiles)
-
-        return new_tiles

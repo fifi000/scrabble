@@ -1,10 +1,11 @@
+from textual import events
 from textual.app import ComposeResult
 from textual.containers import Grid
-from textual.geometry import Size
 from textual.css.scalar import Unit
-from textual import events
+from textual.geometry import Size
 from textual.message import Message
 
+from ui.models import BoardModel
 from ui.widgets.field import Field
 
 
@@ -15,26 +16,32 @@ class Board(Grid):
 
             self.field = field
 
-    def __init__(
-        self, row_count: int, column_count: int, fields: list[Field], *args, **kwargs
-    ) -> None:
-        assert fields, 'Empty fields'
-        assert row_count * column_count == len(fields)
-
+    def __init__(self, board_model: BoardModel, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.row_count = row_count
-        self.column_count = column_count
+        self.board_model = board_model
 
-        self.fields = fields
+        self.fields = [Field(field) for field in self.board_model.fields]
+
+    @property
+    def rows(self) -> int:
+        return self.board_model.rows
+
+    @property
+    def columns(self) -> int:
+        return self.board_model.columns
 
     def on_mount(self) -> None:
-        self.styles.grid_size_rows = self.row_count
-        self.styles.grid_size_columns = self.column_count
+        self.styles.grid_size_rows = self.rows
+        self.styles.grid_size_columns = self.columns
 
     def compose(self) -> ComposeResult:
         for field in self.fields:
             yield field
+
+    def update(self, board_model: BoardModel) -> None:
+        self.__init__(board_model)
+        self.refresh()
 
     def get_content_height(self, container: Size, viewport: Size, height: int) -> int:
         field = self.fields[0]
@@ -43,9 +50,9 @@ class Board(Grid):
         assert field.styles.height.unit == Unit.CELLS, 'Field does not height in cells'
 
         row_height = int(field.styles.height.value)
-        lines = self.row_count + 1
+        lines = self.rows + 1
 
-        return (self.row_count * row_height) + lines
+        return (self.rows * row_height) + lines
 
     def get_content_width(self, container: Size, viewport: Size) -> int:
         field = self.fields[0]
@@ -54,10 +61,10 @@ class Board(Grid):
         assert field.styles.width.unit == Unit.CELLS, 'Field does not width in cells'
 
         column_width = int(field.styles.width.value)
-        lines = self.column_count + 1
+        lines = self.columns + 1
 
-        return (self.column_count * column_width) + lines
+        return (self.columns * column_width) + lines
 
     def on_click(self, event: events.Click) -> None:
-        if isinstance(event.control, Field):
+        if isinstance(event.control, Field) and not event.control.is_locked:
             self.post_message(self.FieldSelected(event.control))

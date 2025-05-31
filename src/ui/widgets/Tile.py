@@ -1,3 +1,4 @@
+from ui.models import TileModel
 from ui.widgets.draggable import Draggable
 
 
@@ -10,14 +11,21 @@ def _get_points_symbol(points: int) -> str:
 
 
 class Tile(Draggable):
-    def __init__(self, symbol: str, points: int, *args, **kwargs) -> None:
+    def __init__(self, tile_model: TileModel, *args, **kwargs) -> None:
         super().__init__(allow_vertical_drag=False, *args, **kwargs)
 
-        self.symbol = symbol
-        self.points = _get_points_symbol(points)
+        self.tile_model = tile_model
 
         self._enabled = True
         self._selected = False
+
+    @property
+    def symbol(self) -> str:
+        return self.tile_model.symbol
+
+    @property
+    def points(self) -> str:
+        return _get_points_symbol(self.tile_model.points)
 
     @property
     def enabled(self) -> bool:
@@ -27,7 +35,10 @@ class Tile(Draggable):
     def enabled(self, value: bool) -> None:
         self._enabled = value
 
-        if not self._enabled:
+        if self._enabled:
+            self.remove_class('disabled')
+        else:
+            self.add_class('disabled')
             self.selected = False
 
     @property

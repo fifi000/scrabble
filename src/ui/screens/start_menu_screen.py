@@ -13,7 +13,7 @@ from textual.widgets import Button, Input, Label
 class FormInfo:
     server_url: str
     player_name: str
-    room_number: int = 0
+    room_number: int
 
 
 class StartMenuScreen(Screen):

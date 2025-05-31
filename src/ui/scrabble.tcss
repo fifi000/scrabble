@@ -31,6 +31,10 @@ Tile.highlighted {
   border: heavy rgb(170, 160, 101);
 }
 
+Tile.disabled {
+  opacity: 50%;
+}
+
 TileRack {  
   height: auto;
   width: 1fr;

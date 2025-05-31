@@ -8,13 +8,15 @@ from websockets.asyncio.server import ServerConnection, serve
 from core.game_logic.enums.language import Language
 from core.game_logic.game import Game
 from core.game_logic.player import Player
+from core.game_logic.position import Position
 from core.protocol.data_types import (
-    BaseData,
+    DataModel,
     BoardData,
     ClientData,
     MessageData,
     PlayerData,
     ServerData,
+    TileData,
 )
 from core.protocol.message_types import ClientMessageType, ServerMessageType
 from server.connection_manager import ConnectionManager
@@ -122,41 +124,39 @@ async def handle_start_game(websocket: ServerConnection) -> None:
         )
 
 
-async def handle_place_letters(
+async def handle_place_tiles(
     websocket: ServerConnection, data: ClientData.PlaceTilesData
 ):
     assert (room := ConnectionManager.get_room_by_connection(websocket))
     assert room.game
-
     assert (player := room.get_player_by_websocket(websocket))
 
-    new_tiles = room.game.place_tiles(
-        player, list(map(UUID, data.tile_ids)), data.field_positions
+    logging.info(f'Player {player.name} is placing tiles in room {room.number}')
+
+    room.game.place_tiles(
+        player,
+        data.tile_ids,
+        [Position(*position) for position in data.field_positions],
     )
 
-    await broadcast_to_players(room, ServerMessageType.TILES_PLACED, data)
-
-    await send_to_player(
-        websocket,
-        ServerMessageType.NEW_TILES,
-        ServerData.NewTilesData(
-            [
-                {
-                    'tile_id': str(tile.id),
-                    'symbol': tile.symbol,
-                    'points': tile.points,
-                }
-                for tile in new_tiles
-            ]
-        ),
-    )
+    for ws, player in room:
+        await send_to_player(
+            ws,
+            ServerMessageType.NEXT_TURN,
+            ServerData.NextTurnData(
+                PlayerData.from_player(player, with_tiles=True),
+                room.game.current_player.id,
+                [PlayerData.from_player(p) for p in room.game.players],
+                BoardData.from_board(room.game.board),
+            ),
+        )
 
 
 # --- server --> client communication ---
 
 
 async def send_to_player(
-    websocket: ServerConnection, type: str, data: BaseData
+    websocket: ServerConnection, type: str, data: DataModel
 ) -> None:
     await websocket.send(MessageData(type, data.to_dict()).to_json())
 
@@ -164,7 +164,7 @@ async def send_to_player(
 async def broadcast_to_players(
     room: Room,
     type: ServerMessageType,
-    data: BaseData,
+    data: DataModel,
     player_to_skip: Player | None = None,
 ) -> None:
     for websocket, player in room:
@@ -196,7 +196,7 @@ async def game_server(websocket: ServerConnection) -> None:
             case ClientMessageType.PLACE_TILES:
                 assert message.data
                 data = ClientData.PlaceTilesData.from_dict(message.data)
-                await handle_place_letters(websocket, data)
+                await handle_place_tiles(websocket, data)
 
             case _:
                 raise Exception(f'Unsupported value: {message.type!r}')

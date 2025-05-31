@@ -1,19 +1,47 @@
 from __future__ import annotations
-from core.game_logic.enums.field_type import FieldType
 
-from textual.widgets import Static
 from textual.reactive import reactive
+from textual.widgets import Static
 
+from core.game_logic.enums.field_type import FieldType
+from ui.models import FieldModel
 from ui.widgets.tile import Tile
 
 
 class Field(Static):
     tile: reactive[Tile | None] = reactive(None)
 
-    def __init__(self, type: FieldType, *args, **kwargs) -> None:
+    def __init__(
+        self, field_model: FieldModel, locked: bool = False, *args, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
 
-        self.type = type
+        self._is_locked = locked
+
+        self.field_model = field_model
+        if self.field_model.tile:
+            self.tile = Tile(self.field_model.tile)
+            self._is_locked = True
+
+    @property
+    def is_locked(self) -> bool:
+        return self._is_locked
+
+    @property
+    def row(self) -> int:
+        return self.field_model.row
+
+    @property
+    def column(self) -> int:
+        return self.field_model.column
+
+    @property
+    def type(self) -> FieldType:
+        return self.field_model.type
+
+    @property
+    def position(self) -> tuple[int, int]:
+        return self.row, self.column
 
     def render(self) -> str:
         if not self.tile:
@@ -26,6 +54,8 @@ class Field(Static):
     @staticmethod
     def get_background_color(field: Field) -> str | None:
         if field.tile:
+            field.styles.opacity = '100%' if field.is_locked else '80%'
+
             return 'yellow'
 
         match field.type:

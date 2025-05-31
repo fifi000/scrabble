@@ -5,8 +5,8 @@ from core.game_logic.tile import Tile
 class Player:
     def __init__(self, name: str, id: str | None = None) -> None:
         self.name = name
+        self.id: str = id or str(uuid.uuid4())
 
-        self.id: str = id if id is not None else str(uuid.uuid4())
         self.tiles: list[Tile] = []
         self.scores: list[int] = []
 

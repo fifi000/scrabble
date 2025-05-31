@@ -3,6 +3,7 @@ from textual.app import App
 from core.protocol.data_types import ClientData, MessageData, ServerData
 from core.protocol.message_types import ClientMessageType, ServerMessageType
 from ui.game_client import GameClient
+from ui.models import BoardModel, PlayerModel
 from ui.screens.game_screen import GameScreen
 from ui.screens.room_screen import RoomScreen
 from ui.screens.start_menu_screen import StartMenuScreen
@@ -54,6 +55,19 @@ class ScrabbleApp(App[None]):
             ).to_dict(),
         )
 
+    # --- GameScreen ---
+
+    async def on_game_screen_submit_tiles(
+        self, message: GameScreen.SubmitTiles
+    ) -> None:
+        await self.game_client.send(
+            type=ClientMessageType.PLACE_TILES,
+            data=ClientData.PlaceTilesData(
+                message.tile_ids,
+                message.field_positions,
+            ).to_dict(),
+        )
+
     # --- handlers ---
 
     def handle_new_room(self, data: ServerData.NewRoomData) -> None:
@@ -70,9 +84,18 @@ class ScrabbleApp(App[None]):
 
     def handle_new_game(self, data: ServerData.NewGameData) -> None:
         screen = GameScreen(
-            data.player,
-            data.players,
-            data.board,
+            PlayerModel.from_player_data(data.player),
+            [PlayerModel.from_player_data(player) for player in data.players],
+            BoardModel.form_board_data(data.board),
+            data.current_player_id,
+        )
+        self.switch_screen(screen)
+
+    def handle_next_turn(self, data: ServerData.NextTurnData) -> None:
+        screen = GameScreen(
+            PlayerModel.from_player_data(data.player),
+            [PlayerModel.from_player_data(player) for player in data.players],
+            BoardModel.form_board_data(data.board),
             data.current_player_id,
         )
         self.switch_screen(screen)
@@ -98,6 +121,11 @@ class ScrabbleApp(App[None]):
                 assert message.data
                 data = ServerData.NewGameData.from_dict(message.data)
                 self.handle_new_game(data)
+
+            case ServerMessageType.NEXT_TURN:
+                assert message.data
+                data = ServerData.NextTurnData.from_dict(message.data)
+                self.handle_next_turn(data)
 
             case _:
                 raise Exception(f'Unsupported value: {message.type!r}')

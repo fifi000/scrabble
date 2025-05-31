@@ -83,5 +83,4 @@ class Board:
 
     def place_tiles(self, tiles: list[Tile], positions: list[Position]) -> None:
         for tile, position in zip(tiles, positions, strict=True):
-            field = self.get_field(position)
-            field.tile = tile
+            self.get_field(position).tile = tile

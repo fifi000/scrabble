@@ -41,9 +41,6 @@ class Draggable(Static):
         if not self.allow_drag:
             return
 
-        # we start dragging
-        self.styles.opacity = '80%'
-
         # let's save current screen and parent offset
         self.mouse_at_drag_start = event.screen_offset
         self.offset_at_drag_start = Offset(
@@ -79,5 +76,4 @@ class Draggable(Static):
             self.offset_at_drag_start = None
             self.release_mouse()
             event.stop()
-            self.styles.opacity = '100%'
             self.post_message(self.DragEnded())
