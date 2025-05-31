@@ -5,10 +5,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Run ui.app module",
+      "name": "UI",
       "type": "debugpy",
       "request": "launch",
       "module": "ui.app",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/src"
+    },
+    {
+      "name": "Server",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "server.server",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/src"
     }
