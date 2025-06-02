@@ -52,7 +52,6 @@ class Board(Grid):
     def update(self, board_model: BoardModel) -> None:
         self.board_model = board_model
         self.fields = [Field(field) for field in self.board_model.fields]
-        self.mutate_reactive(Board.fields)
 
     def get_content_height(self, container: Size, viewport: Size, height: int) -> int:
         if not self.fields:

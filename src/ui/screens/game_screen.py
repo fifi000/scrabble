@@ -55,12 +55,10 @@ class GameScreen(Screen):
 
     def update_players(self, player_models: list[PlayerModel]) -> None:
         self.players = player_models
-        self.mutate_reactive(GameScreen.players)
+        self.query_one(ScoreBoard).update_players(self.players)
 
     def update_board(self, board_model: BoardModel) -> None:
-        board = self.query_one(Board)
-
-        board.update(board_model)
+        self.query_one(Board).update(board_model)
         self.placed_tiles = []
 
     def update_current_player(self, player_id: str) -> None:

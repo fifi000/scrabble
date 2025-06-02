@@ -92,7 +92,9 @@ class ScrabbleApp(App[None]):
 
     @work(exclusive=True)
     async def handle_new_game(self, data: ServerData.NewGameData) -> None:
-        await self.switch_screen(GameScreen())
+        screen = GameScreen()
+        screen.loading = True
+        await self.switch_screen(screen)
 
         assert isinstance(self.screen, GameScreen)
 
@@ -102,6 +104,8 @@ class ScrabbleApp(App[None]):
         )
         self.screen.update_board(BoardModel.form_board_data(data.board))
         self.screen.update_current_player(data.current_player_id)
+
+        self.screen.loading = False
 
     @work(exclusive=True)
     async def handle_next_turn(self, data: ServerData.NextTurnData) -> None:

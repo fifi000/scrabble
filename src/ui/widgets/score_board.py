@@ -3,17 +3,19 @@ from itertools import zip_longest
 
 from rich.style import Style
 from rich.text import Text
+from textual.app import ComposeResult
 from textual.reactive import reactive
 from textual.widgets import DataTable
+from textual.containers import VerticalGroup
 
 from ui.models import PlayerModel
 
 
-class ScoreBoard(DataTable):
+class ScoreBoard(VerticalGroup):
     BORDER_TITLE = 'Score Board'
 
     players: reactive[list[PlayerModel]] = reactive(list, recompose=True)
-    current_player_id = reactive(str)
+    current_player_id = reactive(str, recompose=True)
 
     def update_players(self, players: list[PlayerModel]) -> None:
         self.players = players
@@ -24,15 +26,19 @@ class ScoreBoard(DataTable):
 
     def _get_rows(self) -> Iterable:
         scores = [player.scores for player in self.players]
+
+        if not any(player_scores for player_scores in scores):
+            scores = [[''] for _ in scores]
+
         rows = zip_longest(*scores, fillvalue='')
 
         return rows
 
-    def on_mount(self) -> None:
-        self.clear()
+    def _prepare_table(self) -> DataTable:
+        table = DataTable()
 
         for player in self.players:
-            self.add_column(
+            table.add_column(
                 Text(
                     text=player.name,
                     style=Style(underline=player.id == self.current_player_id),
@@ -40,4 +46,9 @@ class ScoreBoard(DataTable):
             )
 
         for i, row in enumerate(self._get_rows(), start=1):
-            self.add_row(*row, label=str(i))
+            table.add_row(*row, label=str(i))
+
+        return table
+
+    def compose(self) -> ComposeResult:
+        yield self._prepare_table()
