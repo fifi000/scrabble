@@ -3,7 +3,7 @@ Board {
 
   box-sizing: content-box;
   grid-gutter: 1;
-  
+
   height: auto;
   width: auto;
   
@@ -68,12 +68,16 @@ StartMenuScreen {
   }
 }
 
-#move_buttons {
-  height: 5;
-  background: blue;
+MoveButtons {
+  height: auto;
+  padding: 1 2;
+  border: round;
+  border-title-align: center;
+  content-align: center middle;
 }
 
-#score_board {
-  border: round green;
+ScoreBoard {
+  border: round;
   border-title-align: center;
+  min-height: 10;
 }

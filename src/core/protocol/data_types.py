@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Self
 
 from core.data_model import DataModel
 from core.game_logic.board import Board
@@ -23,7 +24,7 @@ class PlayerData(DataModel):
     scores: list[int] | None = None
 
     @classmethod
-    def from_player(cls, player: Player, with_tiles: bool = False) -> PlayerData:
+    def from_player(cls, player: Player, with_tiles: bool = False) -> Self:
         obj = cls(player.id, player.name)
 
         if with_tiles:
@@ -41,7 +42,7 @@ class TileData(DataModel):
     points: int
 
     @classmethod
-    def from_tile(cls, tile: Tile) -> TileData:
+    def from_tile(cls, tile: Tile) -> Self:
         return cls(
             id=tile.id,
             symbol=tile.symbol,
@@ -57,7 +58,7 @@ class FieldData(DataModel):
     tile: TileData | None = None
 
     @classmethod
-    def from_field(cls, field: Field) -> FieldData:
+    def from_field(cls, field: Field) -> Self:
         obj = cls(
             row=field.row,
             column=field.column,
@@ -77,7 +78,7 @@ class BoardData(DataModel):
     fields: list[FieldData]
 
     @classmethod
-    def from_board(cls, board: Board) -> BoardData:
+    def from_board(cls, board: Board) -> Self:
         return cls(
             fields=[FieldData.from_field(field) for field in board.all_fields],
             rows=board.rows,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import random
 
 from textual.app import ComposeResult
 from textual.containers import Grid
@@ -40,7 +41,10 @@ class StartMenuScreen(Screen):
             yield Input(id='player_name', value='feefee')
 
             yield Label('Room number')
-            yield Input(id='room_number', value='1234', type='integer')
+            # yield Input(id='room_number', value='1234', type='integer')
+            yield Input(
+                id='room_number', value=str(random.randint(1, 100_000)), type='integer'
+            )
 
             yield Button.success('Join', id='join')
             yield Button.warning('Create', id='create')

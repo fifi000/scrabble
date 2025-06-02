@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import Self
 
 from core.data_model import DataModel
 from core.game_logic.enums.field_type import FieldType
@@ -14,7 +15,11 @@ class PlayerModel(DataModel):
     scores: list[int]
 
     @classmethod
-    def from_player_data(cls, player_data: PlayerData) -> PlayerModel:
+    def empty(cls) -> PlayerModel:
+        return cls(id='', name='', tiles=[], scores=[])
+
+    @classmethod
+    def from_player_data(cls, player_data: PlayerData) -> Self:
         return cls(
             id=player_data.id,
             name=player_data.name,
@@ -42,7 +47,7 @@ class FieldModel(DataModel):
     tile: TileModel | None = None
 
     @classmethod
-    def from_field_data(cls, field_data: FieldData) -> FieldModel:
+    def from_field_data(cls, field_data: FieldData) -> Self:
         field_model = cls(
             row=field_data.row,
             column=field_data.column,
@@ -74,7 +79,7 @@ class TileModel(DataModel):
     points: int
 
     @classmethod
-    def from_tile_data(cls, tile_data: TileData) -> TileModel:
+    def from_tile_data(cls, tile_data: TileData) -> Self:
         return cls(
             id=tile_data.id,
             symbol=tile_data.symbol,

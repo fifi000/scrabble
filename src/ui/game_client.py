@@ -1,8 +1,10 @@
 import asyncio
+from collections.abc import Awaitable
 import json
 import websockets
 from websockets.asyncio.client import ClientConnection
-from typing import Callable
+from typing import Any, Callable
+from inspect import iscoroutinefunction
 
 from core.protocol.data_types import MessageData
 
@@ -10,7 +12,8 @@ from core.protocol.data_types import MessageData
 class GameClient:
     def __init__(
         self,
-        on_server_message: Callable[[MessageData], None],
+        on_server_message: Callable[[MessageData], Any]
+        | Callable[[MessageData], Awaitable[Any]],
     ) -> None:
         self.on_server_message = on_server_message
         self._websocket: ClientConnection | None = None
@@ -37,4 +40,8 @@ class GameClient:
         async for ws_message in self._websocket:
             message = MessageData.from_dict(json.loads(ws_message))
 
-            self.on_server_message(message)
+            # await asyncio.sleep(1.5)
+            if iscoroutinefunction(self.on_server_message):
+                await self.on_server_message(message)
+            else:
+                self.on_server_message(message)

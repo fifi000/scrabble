@@ -1,18 +1,15 @@
-from collections.abc import Iterable
-from itertools import zip_longest
-
-from rich.style import Style
-from rich.text import Text
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, VerticalGroup
+from textual.containers import Container, VerticalGroup
 from textual.message import Message
+from textual.reactive import reactive, var
 from textual.screen import Screen
-from textual.widget import Widget
-from textual.widgets import Button, DataTable, Header
+from textual.widgets import Button, Header
 
 from ui.models import BoardModel, PlayerModel
 from ui.widgets.board import Board
 from ui.widgets.field import Field
+from ui.widgets.move_buttons import MoveButtons
+from ui.widgets.score_board import ScoreBoard
 from ui.widgets.tile import Tile
 from ui.widgets.tile_rack import TileRack
 
@@ -20,7 +17,9 @@ from ui.widgets.tile_rack import TileRack
 class GameScreen(Screen):
     class SubmitTiles(Message):
         def __init__(
-            self, tile_ids: list[str], field_positions: list[tuple[int, int]]
+            self,
+            tile_ids: list[str],
+            field_positions: list[tuple[int, int]],
         ) -> None:
             super().__init__()
             self.tile_ids = tile_ids
@@ -32,89 +31,42 @@ class GameScreen(Screen):
     class SkipRound(Message):
         pass
 
-    def __init__(
-        self,
-        player_model: PlayerModel,
-        player_models: list[PlayerModel],
-        board_model: BoardModel,
-        current_player_id: str,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-
-        self.player_model = player_model
-        self.player_models = player_models
-        self.current_player_id = current_player_id
-
-        self.placed_tiles: list[Field] = []
-
-        self.board = Board(board_model)
-
-        self.score_board = DataTable(id='score_board')
-        self.score_board.border_title = 'Score Board'
-
-        # available letters
-        self.tile_rack = TileRack([Tile(tile) for tile in self.player_model.tiles])
+    player: var[PlayerModel] = var(PlayerModel.empty)
+    players: reactive[list[PlayerModel]] = reactive(list)
+    current_player_id: var[str] = var(str)
 
     @property
     def is_my_turn(self) -> bool:
-        return self.player_model.id == self.current_player_id
-
-    def _get_buttons(self) -> Iterable[Widget]:
-        with Horizontal(id='move_buttons'):
-            yield Button.success(
-                'Submit',
-                id='submit',
-                disabled=(not self.is_my_turn),
-            )
-            yield Button.warning(
-                'Exchange',
-                id='exchange',
-                disabled=(not self.is_my_turn),
-            )
-            yield Button.error(
-                'Skip',
-                id='skip',
-                disabled=(not self.is_my_turn),
-            )
-
-    def _get_score_board(self) -> Iterable[Widget]:
-        for player in self.player_models:
-            self.score_board.add_column(
-                Text(
-                    text=player.name,
-                    style=Style(underline=(player.id == self.current_player_id)),
-                )
-            )
-
-        players_scores = [player.scores or [] for player in self.player_models]
-        rows = zip_longest(*players_scores, fillvalue='')
-
-        for i, row in enumerate(rows, start=1):
-            self.score_board.add_row(*row, label=str(i))
-
-        yield self.score_board
+        return self.player.id == self.current_player_id
 
     def compose(self) -> ComposeResult:
         yield Header(name='Scrabble')
 
         with Container():
-            yield self.board
+            yield Board()
             with VerticalGroup():
-                yield self.tile_rack
-                yield from self._get_buttons()
-                yield from self._get_score_board()
+                yield TileRack()
+                yield MoveButtons()
+                yield ScoreBoard()
 
     def update_player(self, player_model: PlayerModel) -> None:
-        self.player_model = player_model
+        self.player = player_model
+        self.query_one(TileRack).update_tiles(self.player.tiles)
 
     def update_players(self, player_models: list[PlayerModel]) -> None:
-        self.player_models = player_models
+        self.players = player_models
+        self.mutate_reactive(GameScreen.players)
 
     def update_board(self, board_model: BoardModel) -> None:
-        self.board.update(board_model)
+        board = self.query_one(Board)
+
+        board.update(board_model)
         self.placed_tiles = []
+
+    def update_current_player(self, player_id: str) -> None:
+        self.current_player_id = player_id
+        self.query_one(MoveButtons).disabled = not self.is_my_turn
+        self.query_one(ScoreBoard).update_current_player(self.current_player_id)
 
     def place_tile(self, tile: Tile, field: Field) -> None:
         if field.tile:
@@ -132,7 +84,7 @@ class GameScreen(Screen):
         field.tile = None
 
     def on_board_field_selected(self, message: Board.FieldSelected) -> None:
-        tile = self.tile_rack.get_selected()
+        tile = self.query_one(TileRack).get_selected()
 
         if tile is not None:
             self.place_tile(tile, message.field)

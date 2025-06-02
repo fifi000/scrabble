@@ -54,8 +54,6 @@ class Field(Static):
     @staticmethod
     def get_background_color(field: Field) -> str | None:
         if field.tile:
-            field.styles.opacity = '100%' if field.is_locked else '80%'
-
             return 'yellow'
 
         match field.type:
