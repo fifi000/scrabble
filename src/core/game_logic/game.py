@@ -23,10 +23,15 @@ P = ParamSpec('P')
 
 
 class Game:
-    def __init__(self, language: Language) -> None:
+    def __init__(
+        self,
+        language: Language,
+        *,
+        players: list[Player] = list(),
+    ) -> None:
         self.language = language
         self.letter_bag = TileBag(language)
-        self.players: list[Player] = []
+        self.players = players
         self.board = Board()
         self.move = 0
         self.game_started = False

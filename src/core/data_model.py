@@ -1,18 +1,15 @@
-from __future__ import annotations
-from typing import Any, Type, TypeVar
+from typing import Any, Self
 
 from pydantic import BaseModel
-
-T = TypeVar('T', bound='DataModel')
 
 
 class DataModel(BaseModel):
     @classmethod
-    def from_json(cls: Type[T], json_string: str) -> T:
+    def from_json(cls, json_string: str) -> Self:
         return cls.model_validate_json(json_string)
 
     @classmethod
-    def from_dict(cls: Type[T], data: dict) -> T:
+    def from_dict(cls, data: dict) -> Self:
         return cls.model_validate(data)
 
     def to_json(self) -> str:

@@ -9,11 +9,6 @@ from core.game_logic.player import Player
 from core.game_logic.tile import Tile
 
 
-class MessageData(DataModel):
-    type: str
-    data: dict | None = None
-
-
 class PlayerData(DataModel):
     id: str
     name: str
@@ -80,45 +75,3 @@ class BoardData(DataModel):
             rows=board.rows,
             columns=board.columns,
         )
-
-
-class ClientData:
-    class CreateRoomData(DataModel):
-        room_number: int
-        player_name: str
-
-    class JoinRoomData(DataModel):
-        room_number: int
-        player_name: str
-
-    class PlaceTilesData(DataModel):
-        tile_ids: list[str]
-        field_positions: list[tuple[int, int]]
-
-
-# server data
-
-
-class ServerData:
-    class NewRoomData(DataModel):
-        room_number: int
-        player: PlayerData
-
-    class JoinRoomData(DataModel):
-        room_number: int
-        player: list[PlayerData]
-
-    class NewPlayerData(DataModel):
-        player: PlayerData
-
-    class NewGameData(DataModel):
-        player: PlayerData
-        current_player_id: str
-        players: list[PlayerData]
-        board: BoardData
-
-    class NextTurnData(DataModel):
-        player: PlayerData
-        current_player_id: str
-        players: list[PlayerData]
-        board: BoardData

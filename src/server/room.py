@@ -25,7 +25,7 @@ class Room:
 
         self._player_clients.append(player_client)
 
-    def get_player_by_websocket(self, websocket: ServerConnection) -> Player | None:
+    def find_player_by_connection(self, websocket: ServerConnection) -> Player | None:
         for ws, player in self._player_clients:
             if ws.id == websocket.id:
                 return player

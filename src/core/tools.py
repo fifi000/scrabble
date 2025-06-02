@@ -16,7 +16,9 @@ def distinct_by(iterable: Iterable[T], *, key: Callable[[T], U]) -> Iterable[T]:
 
 
 def split(
-    iterable: Iterable[T], *, key: Callable[[T], bool]
+    iterable: Iterable[T],
+    *,
+    key: Callable[[T], bool],
 ) -> tuple[Iterable[T], Iterable[T]]:
     """
     Splits an iterable into two groups based on a predicate function.

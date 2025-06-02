@@ -1,12 +1,13 @@
 import asyncio
-from collections.abc import Awaitable
 import json
+from collections.abc import Awaitable
+from inspect import iscoroutinefunction
+from typing import Any, Protocol
+
 import websockets
 from websockets.asyncio.client import ClientConnection
-from typing import Any, Protocol
-from inspect import iscoroutinefunction
 
-from core.protocol.data_types import MessageData
+from core.protocol.message_data import MessageData
 
 
 class MessageHandler(Protocol):
