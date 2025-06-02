@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import Self
 
 from core.data_model import DataModel
@@ -7,7 +6,6 @@ from core.game_logic.enums.field_type import FieldType
 from core.protocol.data_types import BoardData, FieldData, PlayerData, TileData
 
 
-@dataclass
 class PlayerModel(DataModel):
     id: str
     name: str
@@ -39,7 +37,6 @@ class PlayerModel(DataModel):
         return player_data
 
 
-@dataclass
 class FieldModel(DataModel):
     row: int
     column: int
@@ -72,7 +69,6 @@ class FieldModel(DataModel):
         return field_data
 
 
-@dataclass
 class TileModel(DataModel):
     id: str
     symbol: str
@@ -94,7 +90,6 @@ class TileModel(DataModel):
         )
 
 
-@dataclass
 class BoardModel(DataModel):
     rows: int
     columns: int

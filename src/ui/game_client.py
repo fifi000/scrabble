@@ -3,18 +3,18 @@ from collections.abc import Awaitable
 import json
 import websockets
 from websockets.asyncio.client import ClientConnection
-from typing import Any, Callable
+from typing import Any, Protocol
 from inspect import iscoroutinefunction
 
 from core.protocol.data_types import MessageData
 
 
+class MessageHandler(Protocol):
+    def __call__(self, message: MessageData) -> Any | Awaitable[Any]: ...
+
+
 class GameClient:
-    def __init__(
-        self,
-        on_server_message: Callable[[MessageData], Any]
-        | Callable[[MessageData], Awaitable[Any]],
-    ) -> None:
+    def __init__(self, on_server_message: MessageHandler) -> None:
         self.on_server_message = on_server_message
         self._websocket: ClientConnection | None = None
 
@@ -30,7 +30,10 @@ class GameClient:
     async def send(self, type: str, data: dict | None = None) -> None:
         assert self._websocket
 
-        message = MessageData(type, data)
+        message = MessageData(
+            type=type,
+            data=data,
+        )
 
         await self._websocket.send(message.to_json())
 

@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 
 from websockets.asyncio.server import ServerConnection
@@ -32,6 +32,14 @@ class Room:
 
         return None
 
+    def get_players(self) -> Iterable[Player]:
+        for player_client in self._player_clients:
+            yield player_client.player
+
+    def get_websockets(self) -> Iterable[ServerConnection]:
+        for player_client in self._player_clients:
+            yield player_client.websocket
+
     def __iter__(self) -> Iterator[PlayerClient]:
-        for pc in self._player_clients:
-            yield pc
+        for player_client in self._player_clients:
+            yield player_client

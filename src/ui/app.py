@@ -1,16 +1,12 @@
-import asyncio
-import time
-from textual import work, log
+from textual import log, work
 from textual.app import App
-from textual.widgets import Welcome
-from textual.screen import Screen
+from textual.reactive import var
 
 from core.protocol.data_types import ClientData, MessageData, ServerData
 from core.protocol.message_types import ClientMessageType, ServerMessageType
 from ui.game_client import GameClient
 from ui.models import BoardModel, PlayerModel
 from ui.screens.game_screen import GameScreen
-from ui.screens.message_viewer import MessageViewer
 from ui.screens.room_screen import RoomScreen
 from ui.screens.start_menu_screen import StartMenuScreen
 
@@ -19,14 +15,18 @@ class ScrabbleApp(App[None]):
     CSS_PATH = 'scrabble.tcss'
     TITLE = 'Scrabble'
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.game_client = GameClient(
-            self.handle_server_message,
-        )
+    _game_client: var[GameClient | None] = var(None)
 
     def on_mount(self) -> None:
+        self._game_client = GameClient(self.handle_server_message)
         self.push_screen(StartMenuScreen())
+
+    @property
+    def game_client(self) -> GameClient:
+        if self._game_client is None:
+            raise RuntimeError('Game client is not initialized.')
+
+        return self._game_client
 
     # --- RoomScreen - events ---
 
@@ -43,8 +43,8 @@ class ScrabbleApp(App[None]):
         await self.game_client.send(
             type=ClientMessageType.JOIN_ROOM,
             data=ClientData.JoinRoomData(
-                message.form_info.room_number,
-                message.form_info.player_name,
+                room_number=message.form_info.room_number,
+                player_name=message.form_info.player_name,
             ).to_dict(),
         )
 
@@ -56,8 +56,8 @@ class ScrabbleApp(App[None]):
         await self.game_client.send(
             type=ClientMessageType.CREATE_ROOM,
             data=ClientData.CreateRoomData(
-                message.form_info.room_number,
-                message.form_info.player_name,
+                room_number=message.form_info.room_number,
+                player_name=message.form_info.player_name,
             ).to_dict(),
         )
 
@@ -69,8 +69,8 @@ class ScrabbleApp(App[None]):
         await self.game_client.send(
             type=ClientMessageType.PLACE_TILES,
             data=ClientData.PlaceTilesData(
-                message.tile_ids,
-                message.field_positions,
+                tile_ids=message.tile_ids,
+                field_positions=message.field_positions,
             ).to_dict(),
         )
 
@@ -78,17 +78,17 @@ class ScrabbleApp(App[None]):
 
     @work(exclusive=True)
     async def handle_new_room(self, data: ServerData.NewRoomData) -> None:
-        screen = RoomScreen(data.room_number, [data.player_info.name])
+        screen = RoomScreen(data.room_number, [data.player.name])
         await self.switch_screen(screen)
 
     @work(exclusive=True)
     async def handle_join_room(self, data: ServerData.JoinRoomData) -> None:
-        screen = RoomScreen(data.room_number, [info.name for info in data.player_infos])
+        screen = RoomScreen(data.room_number, [info.name for info in data.player])
         await self.switch_screen(screen)
 
     def handle_new_player(self, data: ServerData.NewPlayerData) -> None:
         assert isinstance(self.screen, RoomScreen)
-        self.screen.add_player(data.player_info.name)
+        self.screen.add_player(data.player.name)
 
     @work(exclusive=True)
     async def handle_new_game(self, data: ServerData.NewGameData) -> None:
@@ -132,7 +132,7 @@ class ScrabbleApp(App[None]):
             case ServerMessageType.NEW_PLAYER:
                 assert message.data
                 data = ServerData.NewPlayerData.from_dict(message.data)
-                print(f'Processing new player: {data.player_info.name}')
+                print(f'Processing new player: {data.player.name}')
                 self.handle_new_player(data)
 
             case ServerMessageType.JOIN_ROOM:

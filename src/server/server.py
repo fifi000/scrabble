@@ -17,7 +17,7 @@ from core.protocol.data_types import (
     ServerData,
 )
 from core.protocol.message_types import ClientMessageType, ServerMessageType
-from server.connection_manager import ConnectionManager
+from server.room_manager import RoomManager
 from server.room import Room
 
 logging.basicConfig(
@@ -26,58 +26,65 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
 )
 
+room_manager = RoomManager()
+
 
 # --- room actions ---
 
 
 def join_room(
-    websocket: ServerConnection, data: ClientData.JoinRoomData
+    websocket: ServerConnection,
+    data: ClientData.JoinRoomData,
 ) -> tuple[Player, Room]:
     logging.info(f'Joining player {data.player_name} to room {data.room_number}')
     player = Player(data.player_name)
 
-    room = ConnectionManager.join_room(data.room_number, websocket, player)
+    room = room_manager.join_room(data.room_number, websocket, player)
     logging.info(f'Player {data.player_name} joined room {data.room_number}')
 
     return player, room
 
 
 async def handle_create_room(
-    websocket: ServerConnection, data: ClientData.CreateRoomData
+    websocket: ServerConnection,
+    data: ClientData.CreateRoomData,
 ) -> None:
     logging.info(f'Creating room {data.room_number} for player {data.player_name}')
 
-    room = ConnectionManager.create_room(data.room_number)
+    room = room_manager.create_room(data.room_number)
 
     logging.info(f'Room {data.room_number} created')
 
     player, room = join_room(
-        websocket, ClientData.JoinRoomData(data.room_number, data.player_name)
+        websocket,
+        ClientData.JoinRoomData(
+            room_number=data.room_number,
+            player_name=data.player_name,
+        ),
     )
 
     await send_to_player(
         websocket,
         ServerMessageType.NEW_ROOM_CREATED,
         ServerData.NewRoomData(
-            room.number,
-            PlayerData.from_player(player),
+            room_number=room.number,
+            player=PlayerData.from_player(player),
         ),
     )
 
 
 async def handle_join_room(
-    websocket: ServerConnection, data: ClientData.JoinRoomData
+    websocket: ServerConnection,
+    data: ClientData.JoinRoomData,
 ) -> None:
     player, room = join_room(websocket, data)
-
-    players = [p for ws, p in room]
 
     await send_to_player(
         websocket,
         ServerMessageType.JOIN_ROOM,
         ServerData.JoinRoomData(
-            room.number,
-            [PlayerData.from_player(p) for p in players],
+            room_number=room.number,
+            player=[PlayerData.from_player(p) for p in room.get_players()],
         ),
     )
 
@@ -85,9 +92,9 @@ async def handle_join_room(
         room,
         ServerMessageType.NEW_PLAYER,
         ServerData.NewPlayerData(
-            PlayerData.from_player(player),
+            player=PlayerData.from_player(player),
         ),
-        player,
+        players_to_skip=[player],
     )
 
 
@@ -95,7 +102,7 @@ async def handle_join_room(
 
 
 async def handle_start_game(websocket: ServerConnection) -> None:
-    assert (room := ConnectionManager.get_room_by_connection(websocket))
+    assert (room := room_manager.get_room_by_connection(websocket))
 
     logging.info(f'Starting game in room {room.number}...')
 
@@ -114,18 +121,19 @@ async def handle_start_game(websocket: ServerConnection) -> None:
             ws,
             ServerMessageType.NEW_GAME,
             ServerData.NewGameData(
-                PlayerData.from_player(player, with_tiles=True),
-                room.game.current_player.id,
-                [PlayerData.from_player(p) for p in room.game.players],
-                BoardData.from_board(room.game.board),
+                player=PlayerData.from_player(player, with_tiles=True),
+                current_player_id=room.game.current_player.id,
+                players=[PlayerData.from_player(p) for p in room.game.players],
+                board=BoardData.from_board(room.game.board),
             ),
         )
 
 
 async def handle_place_tiles(
-    websocket: ServerConnection, data: ClientData.PlaceTilesData
+    websocket: ServerConnection,
+    data: ClientData.PlaceTilesData,
 ):
-    assert (room := ConnectionManager.get_room_by_connection(websocket))
+    assert (room := room_manager.get_room_by_connection(websocket))
     assert room.game
     assert (player := room.get_player_by_websocket(websocket))
 
@@ -142,10 +150,10 @@ async def handle_place_tiles(
             ws,
             ServerMessageType.NEXT_TURN,
             ServerData.NextTurnData(
-                PlayerData.from_player(player, with_tiles=True),
-                room.game.current_player.id,
-                [PlayerData.from_player(p) for p in room.game.players],
-                BoardData.from_board(room.game.board),
+                player=PlayerData.from_player(player, with_tiles=True),
+                current_player_id=room.game.current_player.id,
+                players=[PlayerData.from_player(p) for p in room.game.players],
+                board=BoardData.from_board(room.game.board),
             ),
         )
 
@@ -154,19 +162,28 @@ async def handle_place_tiles(
 
 
 async def send_to_player(
-    websocket: ServerConnection, type: str, data: DataModel
+    websocket: ServerConnection,
+    type: str,
+    data: DataModel,
 ) -> None:
-    await websocket.send(MessageData(type, data.to_dict()).to_json())
+    await websocket.send(
+        MessageData(
+            type=type,
+            data=data.to_dict(),
+        ).to_json()
+    )
 
 
 async def broadcast_to_players(
     room: Room,
     type: ServerMessageType,
     data: DataModel,
-    player_to_skip: Player | None = None,
+    players_to_skip: list[Player] = list(),
 ) -> None:
+    skip_ids = {player.id for player in players_to_skip}
+
     for websocket, player in room:
-        if player_to_skip and player_to_skip.id == player.id:
+        if player.id in skip_ids:
             continue
         await send_to_player(websocket, type, data)
 
@@ -203,7 +220,7 @@ async def game_server(websocket: ServerConnection) -> None:
 async def main():
     while True:
         try:
-            ConnectionManager.clear()
+            room_manager.reset()
             async with serve(game_server, 'localhost', 8765) as server:
                 await server.serve_forever()
         except Exception as e:

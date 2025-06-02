@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Self
 
 from core.data_model import DataModel
@@ -10,13 +9,11 @@ from core.game_logic.player import Player
 from core.game_logic.tile import Tile
 
 
-@dataclass
 class MessageData(DataModel):
     type: str
     data: dict | None = None
 
 
-@dataclass
 class PlayerData(DataModel):
     id: str
     name: str
@@ -25,17 +22,18 @@ class PlayerData(DataModel):
 
     @classmethod
     def from_player(cls, player: Player, with_tiles: bool = False) -> Self:
-        obj = cls(player.id, player.name)
+        obj = cls(
+            id=player.id,
+            name=player.name,
+            scores=player.scores,
+        )
 
         if with_tiles:
             obj.tiles = [TileData.from_tile(tile) for tile in player.tiles]
 
-        obj.scores = player.scores
-
         return obj
 
 
-@dataclass
 class TileData(DataModel):
     id: str
     symbol: str
@@ -50,7 +48,6 @@ class TileData(DataModel):
         )
 
 
-@dataclass
 class FieldData(DataModel):
     row: int
     column: int
@@ -71,7 +68,6 @@ class FieldData(DataModel):
         return obj
 
 
-@dataclass
 class BoardData(DataModel):
     rows: int
     columns: int
@@ -87,17 +83,14 @@ class BoardData(DataModel):
 
 
 class ClientData:
-    @dataclass
     class CreateRoomData(DataModel):
         room_number: int
         player_name: str
 
-    @dataclass
     class JoinRoomData(DataModel):
         room_number: int
         player_name: str
 
-    @dataclass
     class PlaceTilesData(DataModel):
         tile_ids: list[str]
         field_positions: list[tuple[int, int]]
@@ -107,28 +100,23 @@ class ClientData:
 
 
 class ServerData:
-    @dataclass
     class NewRoomData(DataModel):
         room_number: int
-        player_info: PlayerData
+        player: PlayerData
 
-    @dataclass
     class JoinRoomData(DataModel):
         room_number: int
-        player_infos: list[PlayerData]
+        player: list[PlayerData]
 
-    @dataclass
     class NewPlayerData(DataModel):
-        player_info: PlayerData
+        player: PlayerData
 
-    @dataclass
     class NewGameData(DataModel):
         player: PlayerData
         current_player_id: str
         players: list[PlayerData]
         board: BoardData
 
-    @dataclass
     class NextTurnData(DataModel):
         player: PlayerData
         current_player_id: str

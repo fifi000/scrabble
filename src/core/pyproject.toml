@@ -4,9 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "core"
-version = "0.1.0"
+version = "0.2.0"
 description = "Shared types for use in multiple projects"
-requires-python = ">=3.7"
+requires-python = ">=3.12"
+dependencies = ["pydantic>2.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
