@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-from uuid import UUID
 
 from websockets.asyncio.server import ServerConnection, serve
 
@@ -10,13 +9,12 @@ from core.game_logic.game import Game
 from core.game_logic.player import Player
 from core.game_logic.position import Position
 from core.protocol.data_types import (
-    DataModel,
     BoardData,
     ClientData,
+    DataModel,
     MessageData,
     PlayerData,
     ServerData,
-    TileData,
 )
 from core.protocol.message_types import ClientMessageType, ServerMessageType
 from server.connection_manager import ConnectionManager

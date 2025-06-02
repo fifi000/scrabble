@@ -6,4 +6,4 @@ class Position(NamedTuple):
     column: int = 0
 
     def __repr__(self) -> str:
-        return f'({self.row}, {self.column})'
+        return f'Position(row={self.row}, column={self.column})'

@@ -7,9 +7,10 @@ class Field:
     def __init__(
         self, position: Position, type: FieldType, tile: Tile | None = None
     ) -> None:
-        self.position: Position = position
-        self.type: FieldType = type
-        self.tile: Tile | None = tile
+        self.position = position
+        self.type = type
+        self.tile = tile
+
         self.just_placed_tile = False
 
     @property
@@ -23,3 +24,6 @@ class Field:
     @property
     def column(self) -> int:
         return self.position.column
+
+    def __repr__(self) -> str:
+        return f'Field(position={self.position}, type={self.type}, tile={self.tile})'

@@ -14,12 +14,12 @@ class Player:
     def score(self) -> int:
         return sum(self.scores)
 
-    def __repr__(self) -> str:
-        return f'{self.name} - {self.score}'
-
     def get_tile(self, tile_id: str) -> Tile:
         for tile in self.tiles:
             if tile.id == tile_id:
                 return tile
 
         raise Exception('Did not find tile for given id.')
+
+    def __repr__(self) -> str:
+        return f'Player(name={self.name}, id={self.id}, score={self.score})'
