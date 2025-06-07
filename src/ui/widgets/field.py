@@ -3,7 +3,7 @@ from __future__ import annotations
 from textual.reactive import reactive
 from textual.widgets import Static
 
-from core.game_logic.enums.field_type import FieldType
+from core.game.enums import FieldType
 from ui.models import FieldModel
 from ui.widgets.tile import Tile
 
@@ -12,11 +12,11 @@ class Field(Static):
     tile: reactive[Tile | None] = reactive(None)
 
     def __init__(
-        self, field_model: FieldModel, locked: bool = False, *args, **kwargs
+        self, field_model: FieldModel, is_locked: bool = False, *args, **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
 
-        self._is_locked = locked
+        self._is_locked = is_locked
 
         self.field_model = field_model
         if self.field_model.tile:
@@ -49,11 +49,14 @@ class Field(Static):
         return self.tile.text.center(self.size.width)
 
     def watch_tile(self, new_tile: Tile) -> None:
-        self.styles.background = Field.get_background_color(self)
+        self.styles.background = Field._get_background_color(self)
 
     @staticmethod
-    def get_background_color(field: Field) -> str | None:
-        if field.tile:
+    def _get_background_color(field: Field) -> str | None:
+        if field.tile and field.is_locked:
+            return 'yellow'
+        elif field.tile:
+            field.styles.opacity = 0.5
             return 'yellow'
 
         match field.type:

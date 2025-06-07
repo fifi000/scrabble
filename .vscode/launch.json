@@ -16,7 +16,7 @@
       "name": "Server",
       "type": "debugpy",
       "request": "launch",
-      "module": "server.server",
+      "module": "server.app",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/src"
     }

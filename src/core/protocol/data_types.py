@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Self
 
 from core.data_model import DataModel
-from core.game_logic.board import Board
-from core.game_logic.field import Field
-from core.game_logic.player import Player
-from core.game_logic.tile import Tile
+from core.game.objects.board import Board
+from core.game.objects.field import Field
+from core.game.objects.player import Player
+from core.game.objects.tile import Tile
 
 
 class PlayerData(DataModel):
@@ -71,7 +71,7 @@ class BoardData(DataModel):
     @classmethod
     def from_board(cls, board: Board) -> Self:
         return cls(
-            fields=[FieldData.from_field(field) for field in board.all_fields],
+            fields=[FieldData.from_field(field) for field in board.get_fields()],
             rows=board.rows,
             columns=board.columns,
         )

@@ -1,4 +1,5 @@
 from core.data_model import DataModel
+from core.game.types import Position
 
 
 class CreateRoomData(DataModel):
@@ -12,5 +13,8 @@ class JoinRoomData(DataModel):
 
 
 class PlaceTilesData(DataModel):
-    tile_ids: list[str]
-    field_positions: list[tuple[int, int]]
+    tile_positions: list[tuple[str, Position]]
+
+
+class StartGameData(DataModel):
+    room_number: int

@@ -1,6 +1,6 @@
-from core.game_logic.enums.field_type import FieldType
-from core.game_logic.position import Position
-from core.game_logic.tile import Tile
+from core.game.enums import FieldType
+from core.game.objects.tile import Tile
+from core.game.types import Position
 
 
 class Field:
@@ -11,11 +11,7 @@ class Field:
         self.type = type
         self.tile = tile
 
-        self.just_placed_tile = False
-
-    @property
-    def is_empty(self) -> bool:
-        return self.tile is None
+        self.is_tile_recently_placed: bool = False
 
     @property
     def row(self) -> int:

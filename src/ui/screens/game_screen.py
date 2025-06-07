@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from textual.app import ComposeResult
 from textual.containers import Container, VerticalGroup
 from textual.message import Message
@@ -5,6 +7,7 @@ from textual.reactive import reactive, var
 from textual.screen import Screen
 from textual.widgets import Button, Header
 
+from core.game.types import Position
 from ui.models import BoardModel, PlayerModel
 from ui.widgets.board import Board
 from ui.widgets.field import Field
@@ -15,15 +18,9 @@ from ui.widgets.tile_rack import TileRack
 
 
 class GameScreen(Screen):
+    @dataclass
     class SubmitTiles(Message):
-        def __init__(
-            self,
-            tile_ids: list[str],
-            field_positions: list[tuple[int, int]],
-        ) -> None:
-            super().__init__()
-            self.tile_ids = tile_ids
-            self.field_positions = field_positions
+        tile_positions: list[tuple[str, Position]]
 
     class ExchangeTiles(Message):
         pass
@@ -75,7 +72,7 @@ class GameScreen(Screen):
         self.placed_tiles.append(field)
 
     def remove_tile(self, field: Field) -> None:
-        assert field.tile
+        assert field.tile, f'Given field {field!r} does not have tile.'
 
         field.tile.enabled = True
         self.placed_tiles.remove(field)
@@ -96,12 +93,13 @@ class GameScreen(Screen):
 
                 self.post_message(
                     self.SubmitTiles(
-                        tile_ids=[
-                            field.tile.tile_model.id for field in self.placed_tiles
-                        ],
-                        field_positions=[field.position for field in self.placed_tiles],
+                        tile_positions=[
+                            (field.tile.tile_model.id, field.position)
+                            for field in self.placed_tiles
+                        ]
                     )
                 )
+
             case 'exchange':
                 pass
 

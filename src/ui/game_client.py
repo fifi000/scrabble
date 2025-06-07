@@ -7,7 +7,7 @@ from typing import Any, Protocol
 import websockets
 from websockets.asyncio.client import ClientConnection
 
-from core.protocol.message_data import MessageData
+from core.protocol.messages import MessageData
 
 
 class MessageHandler(Protocol):
@@ -19,9 +19,13 @@ class GameClient:
         self.on_server_message = on_server_message
         self._websocket: ClientConnection | None = None
 
-    @property
-    def is_connected(self) -> bool:
-        return self._websocket is not None
+    def _get_websocket(self) -> ClientConnection:
+        if not self._websocket:
+            raise RuntimeError(
+                f'{GameClient.__name__!r} is not connected. You must call {GameClient.connect.__name__!r} first.'
+            )
+
+        return self._websocket
 
     async def connect(self, uri: str) -> None:
         self._websocket = await websockets.connect(uri)
@@ -29,19 +33,19 @@ class GameClient:
         asyncio.create_task(self._listen())
 
     async def send(self, type: str, data: dict | None = None) -> None:
-        assert self._websocket
+        websocket = self._get_websocket()
 
         message = MessageData(
             type=type,
             data=data,
         )
 
-        await self._websocket.send(message.to_json())
+        await websocket.send(message.to_json())
 
     async def _listen(self) -> None:
-        assert self._websocket
+        websocket = self._get_websocket()
 
-        async for ws_message in self._websocket:
+        async for ws_message in websocket:
             message = MessageData.from_dict(json.loads(ws_message))
 
             # await asyncio.sleep(1.5)

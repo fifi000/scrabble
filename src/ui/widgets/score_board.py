@@ -1,12 +1,12 @@
-from collections.abc import Iterable
+from collections.abc import Iterator
 from itertools import zip_longest
 
 from rich.style import Style
 from rich.text import Text
 from textual.app import ComposeResult
+from textual.containers import VerticalGroup
 from textual.reactive import reactive
 from textual.widgets import DataTable
-from textual.containers import VerticalGroup
 
 from ui.models import PlayerModel
 
@@ -19,12 +19,11 @@ class ScoreBoard(VerticalGroup):
 
     def update_players(self, players: list[PlayerModel]) -> None:
         self.players = players
-        self.mutate_reactive(ScoreBoard.players)
 
     def update_current_player(self, player_id: str) -> None:
         self.current_player_id = player_id
 
-    def _get_rows(self) -> Iterable:
+    def _get_rows(self) -> Iterator:
         scores = [player.scores for player in self.players]
 
         if not any(player_scores for player_scores in scores):

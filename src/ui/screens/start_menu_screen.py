@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import random
+from dataclasses import dataclass
 
 from textual.app import ComposeResult
 from textual.containers import Grid
@@ -18,15 +18,13 @@ class FormInfo:
 
 
 class StartMenuScreen(Screen):
+    @dataclass
     class JoinRoom(Message):
-        def __init__(self, form_info: FormInfo) -> None:
-            super().__init__()
-            self.form_info = form_info
+        form_info: FormInfo
 
+    @dataclass
     class CreateRoom(Message):
-        def __init__(self, form_info: FormInfo) -> None:
-            super().__init__()
-            self.form_info = form_info
+        form_info: FormInfo
 
     def compose(self) -> ComposeResult:
         with Grid():
@@ -41,7 +39,6 @@ class StartMenuScreen(Screen):
             yield Input(id='player_name', value='feefee')
 
             yield Label('Room number')
-            # yield Input(id='room_number', value='1234', type='integer')
             yield Input(
                 id='room_number', value=str(random.randint(1, 100_000)), type='integer'
             )

@@ -1,27 +1,43 @@
 from textual import events
+from textual.css.scalar import Scalar, ScalarOffset, Unit
 from textual.geometry import Offset
-from textual.reactive import reactive
-from textual.widgets import Static
-from textual.css.scalar import ScalarOffset, Scalar, Unit
 from textual.message import Message
+from textual.reactive import reactive
+from textual.visual import VisualType
+from textual.widgets import Static
 
 
 class Draggable(Static):
     class DragEnded(Message):
-        def __init__(self) -> None:
-            super().__init__()
+        pass
 
     mouse_at_drag_start: reactive[Offset | None] = reactive(None)
     offset_at_drag_start: reactive[Offset | None] = reactive(None)
 
     def __init__(
         self,
+        content: VisualType = '',
+        *,
         allow_horizontal_drag: bool = True,
         allow_vertical_drag: bool = True,
-        *args,
-        **kwargs,
+        expand: bool = False,
+        shrink: bool = False,
+        markup: bool = True,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+        disabled: bool = False,
     ) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            content=content,
+            expand=expand,
+            shrink=shrink,
+            markup=markup,
+            name=name,
+            id=id,
+            classes=classes,
+            disabled=disabled,
+        )
 
         self.allow_horizontal_drag = allow_horizontal_drag
         self.allow_vertical_drag = allow_vertical_drag
@@ -54,18 +70,21 @@ class Draggable(Static):
         if not self.is_dragging:
             return
 
+        assert self.mouse_at_drag_start is not None, (
+            'Mouse position at drag start is not set.'
+        )
+        assert self.offset_at_drag_start is not None, 'Offset at drag start is not set.'
+
         x, y = self.styles.offset
 
         if self.allow_horizontal_drag:
-            x = self.offset_at_drag_start.x + (
-                event.screen_x - self.mouse_at_drag_start.x
-            )
+            diff = event.screen_x - self.mouse_at_drag_start.x
+            x = self.offset_at_drag_start.x + diff
             x = Scalar(x, Unit.CELLS, Unit.WIDTH)
 
         if self.allow_vertical_drag:
-            y = self.offset_at_drag_start.y + (
-                event.screen_y - self.mouse_at_drag_start.y
-            )
+            diff = event.screen_y - self.mouse_at_drag_start.y
+            y = self.offset_at_drag_start.y + diff
             y = Scalar(y, Unit.CELLS, Unit.WIDTH)
 
         self.styles.offset = ScalarOffset(x, y)

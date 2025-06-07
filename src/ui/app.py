@@ -3,10 +3,12 @@ from textual.app import App
 from textual.reactive import var
 
 from core.protocol import client_data, server_data
-from core.protocol.message_data import MessageData
+from core.protocol.errors import ErrorData
 from core.protocol.message_types import ClientMessageType, ServerMessageType
+from core.protocol.messages import MessageData
 from ui.game_client import GameClient
 from ui.models import BoardModel, PlayerModel
+from ui.screens.error_screen import ErrorScreen
 from ui.screens.game_screen import GameScreen
 from ui.screens.room_screen import RoomScreen
 from ui.screens.start_menu_screen import StartMenuScreen
@@ -70,8 +72,7 @@ class ScrabbleApp(App[None]):
         await self.game_client.send(
             type=ClientMessageType.PLACE_TILES,
             data=client_data.PlaceTilesData(
-                tile_ids=message.tile_ids,
-                field_positions=message.field_positions,
+                tile_positions=message.tile_positions
             ).to_dict(),
         )
 
@@ -105,8 +106,7 @@ class ScrabbleApp(App[None]):
         )
         self.screen.update_board(BoardModel.form_board_data(data.board))
         self.screen.update_current_player(data.current_player_id)
-
-        self.screen.loading = False
+        screen.loading = False
 
     @work(exclusive=True)
     async def handle_next_turn(self, data: server_data.NextTurnData) -> None:
@@ -118,6 +118,11 @@ class ScrabbleApp(App[None]):
         )
         self.screen.update_board(BoardModel.form_board_data(data.board))
         self.screen.update_current_player(data.current_player_id)
+
+    @work(exclusive=True)
+    async def handle_error_message(self, data: ErrorData) -> None:
+        screen = ErrorScreen(data)
+        await self.push_screen_wait(screen)
 
     @work(exclusive=True)
     async def handle_server_message(self, message: MessageData) -> None:
@@ -154,9 +159,16 @@ class ScrabbleApp(App[None]):
                 print(f'Processing next turn, player: {data.current_player_id}')
                 self.handle_next_turn(data)
 
+            case ServerMessageType.ERROR:
+                assert message.data
+                data = ErrorData.from_dict(message.data)
+                log.error(f'Error from server: {data.message}')
+                self.handle_error_message(data)
+
             case _:
                 log.error(f'Unsupported message type: {message.type}')
-                raise Exception(f'Unsupported value: {message.type!r}')
+                self.handle_error_message(message)
+                raise RuntimeError(f'Unsupported message type: {message.type!r}')
 
 
 if __name__ == '__main__':

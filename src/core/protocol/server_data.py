@@ -1,12 +1,5 @@
-from typing import Any
 from core.data_model import DataModel
 from core.protocol.data_types import BoardData, PlayerData
-
-
-class ErrorData(DataModel):
-    code: str
-    message: str
-    details: dict[str, Any] | None = None
 
 
 class NewRoomData(DataModel):

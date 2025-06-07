@@ -1,6 +1,6 @@
+from textual import events
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual import events
 from textual.reactive import reactive
 
 from ui.models import TileModel
@@ -23,7 +23,7 @@ class TileRack(Horizontal):
     def update_tiles(self, tile_models: list[TileModel]) -> None:
         self.tiles = [Tile(tile_model) for tile_model in tile_models]
 
-    def remove(self, tile):
+    def remove_tile(self, tile: Tile):
         self.tiles.remove(tile)
         self.mutate_reactive(TileRack.tiles)
 
@@ -41,6 +41,8 @@ class TileRack(Horizontal):
 
     def on_draggable_drag_ended(self, message: Draggable.DragEnded) -> None:
         # reorder tiles
-        self.tiles = list(sorted(self.tiles, key=lambda x: x.region.x))
+        self.tiles.sort(key=lambda x: x.region.x)
+        self.mutate_reactive(TileRack.tiles)
+
         for tile in self.tiles:
             tile.styles.offset = (0, 0)

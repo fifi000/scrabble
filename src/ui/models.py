@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Self
 
 from core.data_model import DataModel
-from core.game_logic.enums.field_type import FieldType
+from core.game.enums import FieldType
 from core.protocol.data_types import BoardData, FieldData, PlayerData, TileData
 
 

@@ -1,4 +1,5 @@
-from typing import Self
+from dataclasses import dataclass
+
 from textual import events
 from textual.app import ComposeResult
 from textual.containers import Grid
@@ -12,23 +13,14 @@ from ui.widgets.field import Field
 
 
 class Board(Grid):
+    @dataclass
     class FieldSelected(Message):
-        def __init__(self, field: Field) -> None:
-            super().__init__()
-
-            self.field = field
+        field: Field
 
     fields: reactive[list[Field]] = reactive(list, layout=True, recompose=True)
     board_model: reactive[BoardModel | None] = reactive(
-        None, layout=True, recompose=True
+        default=None, layout=True, recompose=True
     )
-
-    @classmethod
-    def from_model(cls, board_model: BoardModel, *args, **kwargs) -> Self:
-        board = cls(*args, **kwargs)
-        board.update(board_model)
-
-        return board
 
     @property
     def rows(self) -> int:
@@ -53,13 +45,15 @@ class Board(Grid):
         self.board_model = board_model
         self.fields = [Field(field) for field in self.board_model.fields]
 
-    def get_content_height(self, container: Size, viewport: Size, height: int) -> int:
+    def get_content_height(self, container: Size, viewport: Size, width: int) -> int:
         if not self.fields:
             return 0
         field = self.fields[0]
 
         assert field.styles.height is not None, 'Field does not have height'
-        assert field.styles.height.unit == Unit.CELLS, 'Field does not height in cells'
+        assert field.styles.height.unit == Unit.CELLS, (
+            f'Field does not have height in {Unit.CELLS!r}'
+        )
 
         row_height = int(field.styles.height.value)
         lines = self.rows + 1
