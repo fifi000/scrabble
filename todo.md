@@ -31,7 +31,7 @@
 - [ ] predicted score - based on placed but not submitted tiles
 - [x] fix move action buttons container height proportions
 - [ ] game configuration option in rooms
-- [ ] implement buttons logic
-- [ ] make placed tiles tell apart
+- [x] implement buttons logic
+- [x] make placed tiles tell apart
 - [ ] add game info (stats) - tiles left, current player
 - [ ] notifications after server messages
