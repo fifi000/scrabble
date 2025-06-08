@@ -2,10 +2,14 @@ from enum import StrEnum
 
 
 class ClientMessageType(StrEnum):
+    # server actions
     JOIN_ROOM = 'join_room'
     START_GAME = 'start_game'
-    PLACE_TILES = 'place_tiles'
     CREATE_ROOM = 'create_room'
+    # game moves
+    PLACE_TILES = 'place_tiles'
+    EXCHANGE_TILES = 'exchange_tiles'
+    SKIP_TURN = 'skip_turn'
 
 
 class ServerMessageType(StrEnum):

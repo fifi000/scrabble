@@ -1,3 +1,6 @@
+from collections.abc import Iterator
+from typing import override
+
 from textual import events
 from textual.app import ComposeResult
 from textual.containers import Horizontal
@@ -13,12 +16,10 @@ class TileRack(Horizontal):
 
     tiles: reactive[list[Tile]] = reactive(list, recompose=True)
 
-    def get_selected(self) -> Tile | None:
+    def get_selected(self) -> Iterator[Tile]:
         for tile in self.tiles:
             if tile.selected:
-                return tile
-
-        return None
+                yield tile
 
     def update_tiles(self, tile_models: list[TileModel]) -> None:
         self.tiles = [Tile(tile_model) for tile_model in tile_models]
@@ -27,17 +28,23 @@ class TileRack(Horizontal):
         self.tiles.remove(tile)
         self.mutate_reactive(TileRack.tiles)
 
+    @override
     def compose(self) -> ComposeResult:
         for tile in self.tiles:
             yield tile
 
     def on_click(self, event: events.Click) -> None:
         if isinstance(event.control, Tile):
-            for tile in self.tiles:
-                if tile == event.control:
-                    tile.selected = not tile.selected
-                else:
-                    tile.selected = False
+            # multiselection
+            if event.ctrl:
+                event.control.toggle_selected()
+            # at most one can be selected
+            else:
+                for tile in self.tiles:
+                    if tile == event.control:
+                        tile.toggle_selected()
+                    else:
+                        tile.selected = False
 
     def on_draggable_drag_ended(self, message: Draggable.DragEnded) -> None:
         # reorder tiles

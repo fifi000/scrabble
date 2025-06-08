@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from itertools import zip_longest
+from typing import override
 
 from rich.style import Style
 from rich.text import Text
@@ -49,5 +50,6 @@ class ScoreBoard(VerticalGroup):
 
         return table
 
+    @override
     def compose(self) -> ComposeResult:
         yield self._prepare_table()

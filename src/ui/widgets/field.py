@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from typing import assert_never, override
+
 from textual.reactive import reactive
 from textual.widgets import Static
 
 from core.game.enums import FieldType
+from core.game.types import Position
 from ui.models import FieldModel
 from ui.widgets.tile import Tile
 
@@ -19,9 +22,9 @@ class Field(Static):
         self._is_locked = is_locked
 
         self.field_model = field_model
-        if self.field_model.tile:
-            self.tile = Tile(self.field_model.tile)
+        if self.field_model.tile is not None:
             self._is_locked = True
+            self.tile = Tile(self.field_model.tile)
 
     @property
     def is_locked(self) -> bool:
@@ -40,33 +43,45 @@ class Field(Static):
         return self.field_model.type
 
     @property
-    def position(self) -> tuple[int, int]:
-        return self.row, self.column
+    def position(self) -> Position:
+        return Position(self.row, self.column)
 
+    @override
     def render(self) -> str:
         if not self.tile:
             return ''
         return self.tile.text.center(self.size.width)
 
     def watch_tile(self, new_tile: Tile) -> None:
-        self.styles.background = Field._get_background_color(self)
+        self._update_field_style()
 
-    @staticmethod
-    def _get_background_color(field: Field) -> str | None:
-        if field.tile and field.is_locked:
-            return 'yellow'
-        elif field.tile:
-            field.styles.opacity = 0.5
-            return 'yellow'
+    def _update_field_style(self) -> None:
+        self.remove_class(
+            'standard',
+            'double-letter',
+            'triple-letter',
+            'double-word',
+            'triple-word',
+            'tile-unlocked',
+            'tile-locked',
+        )
 
-        match field.type:
-            case FieldType.STANDARD:
-                return None
-            case FieldType.DOUBLE_LETTER:
-                return '#57a9c2'
-            case FieldType.TRIPPLE_LETTER:
-                return '#5774c2'
-            case FieldType.DOUBLE_WORD:
-                return '#9c733e'
-            case FieldType.TRIPPLE_WORD:
-                return '#ce1717'
+        if self.tile and self.is_locked:
+            self.add_class('tile-locked')
+        elif self.tile:
+            self.add_class('tile-unlocked')
+        else:
+            # Add field type classes
+            match self.type:
+                case FieldType.STANDARD:
+                    self.add_class('standard')
+                case FieldType.DOUBLE_LETTER:
+                    self.add_class('double-letter')
+                case FieldType.TRIPLE_LETTER:
+                    self.add_class('triple-letter')
+                case FieldType.DOUBLE_WORD:
+                    self.add_class('double-word')
+                case FieldType.TRIPLE_WORD:
+                    self.add_class('triple-word')
+                case _:
+                    assert_never(self.type)

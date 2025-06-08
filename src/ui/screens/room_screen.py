@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import override
 
 from textual.reactive import reactive
 from textual.app import ComposeResult
@@ -30,6 +31,7 @@ class RoomScreen(Screen):
         self.player_names.append(player_name)
         self.mutate_reactive(RoomScreen.player_names)
 
+    @override
     def compose(self) -> ComposeResult:
         self.border_title = f'Room {self.room_number}'
 

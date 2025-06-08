@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
+from typing import override
 
 from textual.app import ComposeResult
 from textual.containers import Grid
@@ -26,6 +27,7 @@ class StartMenuScreen(Screen):
     class CreateRoom(Message):
         form_info: FormInfo
 
+    @override
     def compose(self) -> ComposeResult:
         with Grid():
             yield Label('Server URL')

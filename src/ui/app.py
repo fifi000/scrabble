@@ -76,6 +76,17 @@ class ScrabbleApp(App[None]):
             ).to_dict(),
         )
 
+    async def on_game_screen_exchange_tiles(
+        self, message: GameScreen.ExchangeTiles
+    ) -> None:
+        await self.game_client.send(
+            type=ClientMessageType.EXCHANGE_TILES,
+            data=client_data.ExchangeTilesData(tile_ids=message.tile_ids).to_dict(),
+        )
+
+    async def on_game_screen_skip_turn(self, message: GameScreen.SkipTurn) -> None:
+        await self.game_client.send(type=ClientMessageType.SKIP_TURN, data=None)
+
     # --- handlers ---
 
     @work(exclusive=True)

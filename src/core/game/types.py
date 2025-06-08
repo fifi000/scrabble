@@ -10,8 +10,23 @@ class Position(NamedTuple):
     row: int = 0
     column: int = 0
 
-    def __repr__(self) -> str:
-        return f'Position(row={self.row}, column={self.column})'
+    def left(self) -> Position:
+        return self + (-1, 0)
+
+    def right(self) -> Position:
+        return self + (1, 0)
+
+    def top(self) -> Position:
+        return self + (0, -1)
+
+    def bottom(self) -> Position:
+        return self + (0, 1)
+
+    def surrounding_positions(self) -> Iterator[Position]:
+        yield self.left()
+        yield self.right()
+        yield self.top()
+        yield self.bottom()
 
     def __add__(self, other: object) -> Position:
         if isinstance(other, tuple):
@@ -24,6 +39,9 @@ class Position(NamedTuple):
             row, column = other
             return Position(row=self.row - row, column=self.column - column)
         return NotImplemented
+
+    def __repr__(self) -> str:
+        return f'Position(row={self.row}, column={self.column})'
 
     @staticmethod
     def get_positions_between(

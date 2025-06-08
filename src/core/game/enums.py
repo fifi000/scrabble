@@ -12,20 +12,20 @@ class FieldType(IntEnum):
 
     # letter bonuses
     DOUBLE_LETTER = 1
-    TRIPPLE_LETTER = 2
+    TRIPLE_LETTER = 2
 
     # word bonuses
     DOUBLE_WORD = 3
-    TRIPPLE_WORD = 4
+    TRIPLE_WORD = 4
 
     def is_bonus(self) -> bool:
         return self.value != FieldType.STANDARD
 
     def is_letter_bonus(self) -> bool:
-        return self.value in {FieldType.DOUBLE_LETTER, FieldType.TRIPPLE_LETTER}
+        return self.value in {FieldType.DOUBLE_LETTER, FieldType.TRIPLE_LETTER}
 
     def is_word_bonus(self) -> bool:
-        return self.value in {FieldType.DOUBLE_WORD, FieldType.TRIPPLE_WORD}
+        return self.value in {FieldType.DOUBLE_WORD, FieldType.TRIPLE_WORD}
 
 
 class Language(IntEnum):

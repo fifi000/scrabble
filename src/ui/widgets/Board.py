@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import override
 
 from textual import events
 from textual.app import ComposeResult
@@ -34,6 +35,7 @@ class Board(Grid):
             return 0
         return self.board_model.columns
 
+    @override
     def compose(self) -> ComposeResult:
         self.styles.grid_size_rows = self.rows
         self.styles.grid_size_columns = self.columns
@@ -45,6 +47,7 @@ class Board(Grid):
         self.board_model = board_model
         self.fields = [Field(field) for field in self.board_model.fields]
 
+    @override
     def get_content_height(self, container: Size, viewport: Size, width: int) -> int:
         if not self.fields:
             return 0
@@ -60,6 +63,7 @@ class Board(Grid):
 
         return (self.rows * row_height) + lines
 
+    @override
     def get_content_width(self, container: Size, viewport: Size) -> int:
         if not self.fields:
             return 0

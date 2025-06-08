@@ -1,28 +1,27 @@
-from typing import Any
+from typing import Any, override
 
 from textual.app import ComposeResult
-from textual.containers import VerticalGroup
-from textual.screen import Screen
-from textual.widgets import Button, Pretty
+from textual.containers import ScrollableContainer
+from textual.screen import ModalScreen
+from textual.widgets import Pretty
 
 
-class ErrorScreen(Screen):
+class ErrorScreen(ModalScreen):
     CSS = """
         ErrorScreen {
-            padding: 4 2;
-
-            Pretty {
-                height: 1fr;
-                width: 100%;
-                border: round white;
-            }
-
-            Button {
-                height: 3;
+            #container {
+                border: heavy $accent;
+                margin: 4 8;
+                scrollbar-gutter: stable;
+                
+                Pretty {
+                    width: auto;
+                }
             }
         }
     """
-    BORDER_TITLE = 'Error Message'
+
+    BINDINGS = [('escape', 'dismiss', 'Dismiss error')]
 
     def __init__(
         self,
@@ -33,17 +32,14 @@ class ErrorScreen(Screen):
         classes: str | None = None,
     ) -> None:
         super().__init__(name=name, id=id, classes=classes)
-        self.object_ = object
+        self.object = object
 
+    @override
     def compose(self) -> ComposeResult:
-        with VerticalGroup():
-            yield Pretty(self.object_)
-            yield Button.error('Close', id='close')
+        with ScrollableContainer(id='container'):
+            yield Pretty(self.object)
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        match event.button.id:
-            case 'close':
-                self.dismiss()
-
-            case _:
-                raise Exception(f'Unsupported button id {event.button.id!r}')
+    def on_mount(self) -> None:
+        widget = self.query_one('#container')
+        widget.border_title = 'Error Message'
+        widget.border_subtitle = 'Escape to close'

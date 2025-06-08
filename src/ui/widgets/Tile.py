@@ -1,3 +1,4 @@
+from typing import override
 from ui.models import TileModel
 from ui.widgets.draggable import Draggable
 
@@ -53,10 +54,14 @@ class Tile(Draggable):
         else:
             self.remove_class('highlighted')
 
+    def toggle_selected(self) -> None:
+        self.selected = not self.selected
+
     @property
     def text(self) -> str:
         return self.symbol + self.points
 
+    @override
     def render(self) -> str:
         return self.text.center(self.size.width)
 

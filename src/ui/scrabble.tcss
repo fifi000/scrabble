@@ -1,3 +1,5 @@
+# --- board ---
+
 Board {
   dock: left;
 
@@ -11,13 +13,45 @@ Board {
   keyline: thin rgb(170, 160, 101);
 }
 
+# --- field ---
+
 Field {
-  # content-align: center middle;
   width: 3;
   height: 1;
   
   color: black;
 }
+
+Field.standard { 
+  # default
+}
+
+Field.double-letter {
+  background: #57a9c2;
+}
+
+Field.triple-letter {
+  background: #5774c2;
+}
+
+Field.double-word {
+  background: #9c733e;
+}
+
+Field.triple-word {
+  background: #ce1717;
+}
+
+Field.tile-unlocked {
+  background: yellow;
+  opacity: 50%;
+}
+
+Field.tile-locked {
+  background: yellow;
+}
+
+# --- tile ---
 
 Tile {
   width: 5;
@@ -35,6 +69,8 @@ Tile.disabled {
   opacity: 50%;
 }
 
+# --- tile rack ---
+
 TileRack {  
   height: auto;
   width: 1fr;
@@ -43,10 +79,14 @@ TileRack {
   background: rgb(4, 105, 12);
 }
 
+# --- room screen ---
+
 RoomScreen {
   border: round;
   border-title-align: center;
 }
+
+# --- start menu ---
 
 StartMenuScreen {
   Grid {
@@ -68,6 +108,8 @@ StartMenuScreen {
   }
 }
 
+# --- move buttons ---
+
 MoveButtons {
   height: auto;
   padding: 1 2;
@@ -75,6 +117,8 @@ MoveButtons {
   border-title-align: center;
   content-align: center middle;
 }
+
+# --- score board ---
 
 ScoreBoard {
   border: round;

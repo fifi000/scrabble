@@ -32,7 +32,7 @@ class GameClient:
 
         asyncio.create_task(self._listen())
 
-    async def send(self, type: str, data: dict | None = None) -> None:
+    async def send(self, type: str, data: dict[str, Any] | None = None) -> None:
         websocket = self._get_websocket()
 
         message = MessageData(

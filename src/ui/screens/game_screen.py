@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import override
 
 from textual.app import ComposeResult
 from textual.containers import Container, VerticalGroup
@@ -9,6 +10,7 @@ from textual.widgets import Button, Header
 
 from core.game.types import Position
 from ui.models import BoardModel, PlayerModel
+from ui.screens.dialog_screen import DialogScreen
 from ui.widgets.board import Board
 from ui.widgets.field import Field
 from ui.widgets.move_buttons import MoveButtons
@@ -22,10 +24,12 @@ class GameScreen(Screen):
     class SubmitTiles(Message):
         tile_positions: list[tuple[str, Position]]
 
+    @dataclass
     class ExchangeTiles(Message):
-        pass
+        tile_ids: list[str]
 
-    class SkipRound(Message):
+    @dataclass
+    class SkipTurn(Message):
         pass
 
     player: var[PlayerModel] = var(PlayerModel.empty)
@@ -36,6 +40,7 @@ class GameScreen(Screen):
     def is_my_turn(self) -> bool:
         return self.player.id == self.current_player_id
 
+    @override
     def compose(self) -> ComposeResult:
         yield Header(name='Scrabble')
 
@@ -79,32 +84,55 @@ class GameScreen(Screen):
         field.tile = None
 
     def on_board_field_selected(self, message: Board.FieldSelected) -> None:
-        tile = self.query_one(TileRack).get_selected()
+        tiles = self.query_one(TileRack).get_selected()
+        tile = next(tiles, None)
 
         if tile is not None:
             self.place_tile(tile, message.field)
         elif message.field.tile is not None:
             self.remove_tile(message.field)
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         match event.button.id:
             case 'submit':
                 assert all(field.tile for field in self.placed_tiles)
 
-                self.post_message(
-                    self.SubmitTiles(
-                        tile_positions=[
-                            (field.tile.tile_model.id, field.position)
-                            for field in self.placed_tiles
-                        ]
+                tile_positions = [
+                    (field.tile.tile_model.id, field.position)
+                    for field in self.placed_tiles
+                ]
+
+                self.post_message(self.SubmitTiles(tile_positions))
+            case 'exchange':
+                if not (tiles := tuple(self.query_one(TileRack).get_selected())):
+                    self.notify(
+                        message='You have to select at least one tile.',
+                        title='Exchange Error',
+                        severity='error',
                     )
+                    return
+
+                tiles_text = ' '.join(tile.text for tile in tiles)
+                question = f'Are you sure you want to exchange these {len(tiles)} tiles?\n {tiles_text}'
+
+                response = await self.app.push_screen_wait(
+                    DialogScreen.yes_no(question)
+                )
+                if not response:
+                    return
+
+                tile_ids = [tile.tile_model.id for tile in tiles]
+                self.post_message(self.ExchangeTiles(tile_ids))
+            case 'skip':
+                question = 'Are you sure you want to skip your turn?'
+
+                response = await self.app.push_screen_wait(
+                    DialogScreen.yes_no(question)
                 )
 
-            case 'exchange':
-                pass
+                if not response:
+                    return
 
-            case 'skip':
-                pass
-
+                self.post_message(self.SkipTurn())
             case _:
                 raise Exception(f'Unsupported button id {event.button.id!r}')

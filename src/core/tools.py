@@ -64,8 +64,8 @@ def all_same(iterable: Iterable[Any]) -> bool:
         first = next(it)
     except StopIteration:
         return True
-
-    return all(item == first for item in it)
+    else:
+        return all(item == first for item in it)
 
 
 @overload

@@ -306,7 +306,7 @@ class ScrabbleGame:
     def _verify_tiles_placements(self, positions: list[Position]) -> None:
         self._verify_fields_availability(positions)
         self._verify_tiles_make_continuous_line(positions)
-        self._verify_first_move_condition(positions)
+        self._verify_first_or_next_move_placement(positions)
 
     def _verify_fields_availability(self, positions: list[Position]) -> None:
         for position in positions:
@@ -363,12 +363,16 @@ class ScrabbleGame:
                     },
                 )
 
-    def _verify_first_move_condition(self, positions: list[Position]) -> None:
-        """The first placement on board, must go through center"""
+    def _verify_first_or_next_move_placement(self, positions: list[Position]) -> None:
+        # this method could be replace with a BFS, where we find if the center field
+        # is reachable from any player's position
+        # but this way seems to be more readable and we get straightforward error messages
 
-        first_move = all(field.tile is None for field in self._board.get_fields())
+        center_position = self._board.center_field.position
+        is_first_move = all(field.tile is None for field in self._board.get_fields())
 
-        if first_move and self._board.center_field.position not in positions:
+        # on first tile placement, tiles must go through the center field
+        if is_first_move and center_position not in positions:
             raise InvalidMoveError(
                 message='First placement must go through the center field.',
                 details={
@@ -376,6 +380,30 @@ class ScrabbleGame:
                     'positions': positions,
                 },
             )
+
+        # on any other move, tiles must be placed next to already placed tiles
+        if not is_first_move:
+            surrounding_positions = (
+                x
+                for position in positions
+                for x in position.surrounding_positions()
+                if x not in positions
+            )
+
+            for surrounding_position in surrounding_positions:
+                try:
+                    # found adjacent tile that have been already there
+                    if self._board.get_field(surrounding_position).tile is not None:
+                        break
+                except IndexError:
+                    continue
+            else:
+                raise InvalidMoveError(
+                    message='Tiles must be placed next to already placed tiles.',
+                    details={
+                        'positions': positions,
+                    },
+                )
 
     def _verify_tiles_ownership(self, player: Player, tiles: list[Tile]) -> None:
         wrong_tiles: list[Tile] = []
@@ -516,7 +544,7 @@ class ScrabbleGame:
         match field_type:
             case FieldType.DOUBLE_LETTER:
                 return 2
-            case FieldType.TRIPPLE_LETTER:
+            case FieldType.TRIPLE_LETTER:
                 return 3
             case _:
                 return 1
@@ -526,7 +554,7 @@ class ScrabbleGame:
         match field_type:
             case FieldType.DOUBLE_WORD:
                 return 2
-            case FieldType.TRIPPLE_WORD:
+            case FieldType.TRIPLE_WORD:
                 return 3
             case _:
                 return 1

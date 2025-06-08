@@ -161,14 +161,20 @@ class GameServer:
                 await self.room_handler.handle_join_room(websocket, data)
 
             case ClientMessageType.START_GAME:
-                # assert message.data
-                # data = client_data.StartGameData.from_dict(message.data)
                 await self.game_handler.handle_start_game(websocket)
 
             case ClientMessageType.PLACE_TILES:
                 assert message.data
                 data = client_data.PlaceTilesData.from_dict(message.data)
                 await self.game_handler.handle_place_tiles(websocket, data)
+
+            case ClientMessageType.EXCHANGE_TILES:
+                assert message.data
+                data = client_data.ExchangeTilesData.from_dict(message.data)
+                await self.game_handler.handle_exchange_tiles(websocket, data)
+
+            case ClientMessageType.SKIP_TURN:
+                await self.game_handler.handle_skip_turn(websocket)
 
             case _:
                 await send_error(
