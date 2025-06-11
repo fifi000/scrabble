@@ -52,7 +52,7 @@ class Field(Static):
             return ''
         return self.tile.text.center(self.size.width)
 
-    def watch_tile(self, new_tile: Tile) -> None:
+    def watch_tile(self, new_tile: Tile | None) -> None:
         self._update_field_style()
 
     def _update_field_style(self) -> None:

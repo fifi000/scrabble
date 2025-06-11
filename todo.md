@@ -8,6 +8,8 @@
 - [ ] AI opponent, based on read text
 - [ ] undo / redo
 
+## common
+
 ## core
 
 - [ ] add protocol model validation
@@ -19,6 +21,8 @@
 - [x] should i move server message data models / types to common module?
 - [x] flask websockets in / out operations
 - [x] game client
+- [ ] add some kind of auth - JWT???
+- [ ] rejoin game
 
 ## UI
 
@@ -26,6 +30,7 @@
 - [x] add background color to placed tiles
 - [x] allow user to sort tiles (only horizontally)
 - [ ] make a browser app (for phones) to work as a controller
+  - [ ] then desktop should have 'watch game' option
 - [x] scoreboard
 - [x] players list - with current player highlighted
 - [ ] predicted score - based on placed but not submitted tiles

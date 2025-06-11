@@ -1,4 +1,5 @@
 from typing import override
+
 from ui.models import TileModel
 from ui.widgets.draggable import Draggable
 
@@ -12,21 +13,21 @@ def _get_points_symbol(points: int) -> str:
 
 
 class Tile(Draggable):
-    def __init__(self, tile_model: TileModel, *args, **kwargs) -> None:
+    def __init__(self, model: TileModel, *args, **kwargs) -> None:
         super().__init__(allow_vertical_drag=False, *args, **kwargs)
 
-        self.tile_model = tile_model
+        self.model = model
 
         self._enabled = True
         self._selected = False
 
     @property
     def symbol(self) -> str:
-        return self.tile_model.symbol
+        return self.model.symbol
 
     @property
     def points(self) -> str:
-        return _get_points_symbol(self.tile_model.points)
+        return _get_points_symbol(self.model.points)
 
     @property
     def enabled(self) -> bool:

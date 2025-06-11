@@ -1,5 +1,5 @@
 from core.data_model import DataModel
-from core.game.types import Position
+from core.protocol.data_types import TileData
 
 
 class CreateRoomData(DataModel):
@@ -20,8 +20,8 @@ class StartGameData(DataModel):
 
 
 class PlaceTilesData(DataModel):
-    tile_positions: list[tuple[str, Position]]
+    tiles_data: list[TileData]
 
 
 class ExchangeTilesData(DataModel):
-    tile_ids: list[str]
+    tiles_data: list[TileData]

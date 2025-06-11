@@ -1,4 +1,5 @@
 import logging
+from turtle import position
 
 from websockets import ServerConnection
 
@@ -69,12 +70,15 @@ class GameHandler(BaseHandler):
 
         logging.info(f'Player {player.name} is placing tiles in room {room.number}')
 
+        tile_positions = [
+            (tile_data.id, tile_data.position) for tile_data in data.tiles_data
+        ]
+
+        assert all(position for tile, position in tile_positions)
+
         room.game.place_tiles(
             player=player,
-            tile_positions=[
-                (player.get_tile_by_id(tile_id), pos)
-                for tile_id, pos in data.tile_positions
-            ],
+            tile_positions=tile_positions,  # type: ignore
         )
 
         for ws, player in room.get_connected_players():
@@ -110,7 +114,9 @@ class GameHandler(BaseHandler):
 
         room.game.exchange_tiles(
             player=player,
-            tiles=[player.get_tile_by_id(tile_id) for tile_id in data.tile_ids],
+            tiles=[
+                player.get_tile_by_id(tile_data.id) for tile_data in data.tiles_data
+            ],
         )
 
         for ws, player in room.get_connected_players():

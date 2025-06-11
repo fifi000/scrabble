@@ -32,6 +32,20 @@ def _convert_grid(grid: list[list[int]]) -> list[list[FieldType]]:
 
 @dataclass
 class GameConfig:
+    """Configuration for the Scrabble game.
+
+    Attributes:
+        tiles_per_round (int): Number of tiles each player receives at the start of each round.
+        min_players (int): Minimum number of players required to start the game.
+        max_players (int): Maximum number of players allowed in the game.
+        min_word_length (int): Minimum length of a word that can be formed with the tiles.
+        language (Language): Language of the game, which determines the tile set.
+        board_layout (list[list[FieldType]]): Layout of the game board represented as a grid of FieldType.
+
+    Raises:
+        ValueError: If any of the attributes are invalid.
+    """
+
     tiles_per_round: int
     min_players: int
     max_players: int
@@ -70,6 +84,8 @@ class GameConfig:
 
     @staticmethod
     def default() -> GameConfig:
+        """Returns the default game configuration for Scrabble with the 15x15 board."""
+
         return GameConfig(
             tiles_per_round=7,
             min_players=1,

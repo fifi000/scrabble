@@ -69,19 +69,19 @@ class ScrabbleApp(App[None]):
     async def on_game_screen_submit_tiles(
         self, message: GameScreen.SubmitTiles
     ) -> None:
+        tiles_data = [model.to_tile_data() for model in message.tile_models]
         await self.game_client.send(
             type=ClientMessageType.PLACE_TILES,
-            data=client_data.PlaceTilesData(
-                tile_positions=message.tile_positions
-            ).to_dict(),
+            data=client_data.PlaceTilesData(tiles_data=tiles_data).to_dict(),
         )
 
     async def on_game_screen_exchange_tiles(
         self, message: GameScreen.ExchangeTiles
     ) -> None:
+        tiles_data = [model.to_tile_data() for model in message.tile_models]
         await self.game_client.send(
             type=ClientMessageType.EXCHANGE_TILES,
-            data=client_data.ExchangeTilesData(tile_ids=message.tile_ids).to_dict(),
+            data=client_data.ExchangeTilesData(tiles_data=tiles_data).to_dict(),
         )
 
     async def on_game_screen_skip_turn(self, message: GameScreen.SkipTurn) -> None:

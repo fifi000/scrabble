@@ -1,28 +1,40 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import Any, NamedTuple, overload
+from typing import Any, NamedTuple, Self, overload
 
 from core import tools
 
 
 class Position(NamedTuple):
+    """Represents a position in a grid with row and column indices.
+
+    Attributes:
+        row (int): The row index of the position.
+        column (int): The column index of the position.
+    """
+
     row: int = 0
     column: int = 0
 
     def left(self) -> Position:
+        """Returns the position to the left of the current position. Previous column."""
         return self + (-1, 0)
 
     def right(self) -> Position:
+        """Returns the position to the right of the current position. Next column."""
         return self + (1, 0)
 
     def top(self) -> Position:
+        """Returns the position above the current position. Previous row."""
         return self + (0, -1)
 
     def bottom(self) -> Position:
+        """Returns the position below the current position. Next row."""
         return self + (0, 1)
 
     def surrounding_positions(self) -> Iterator[Position]:
+        """Yields the positions surrounding the current position in all four directions (left, right, top, bottom)."""
         yield self.left()
         yield self.right()
         yield self.top()
@@ -40,13 +52,40 @@ class Position(NamedTuple):
             return Position(row=self.row - row, column=self.column - column)
         return NotImplemented
 
+    def __lt__(self, value: tuple[int, ...]) -> bool:
+        return super().__lt__(value)
+
+    def __le__(self, value: tuple[int, ...]) -> bool:
+        return super().__le__(value)
+
+    def __gt__(self, value: tuple[int, ...]) -> bool:
+        return super().__gt__(value)
+
+    def __ge__(self, value: tuple[int, ...]) -> bool:
+        return super().__ge__(value)
+
     def __repr__(self) -> str:
         return f'Position(row={self.row}, column={self.column})'
+
+    @classmethod
+    def zero(cls) -> Self:
+        return cls(row=0, column=0)
 
     @staticmethod
     def get_positions_between(
         source: Position, destination: Position
     ) -> Iterator[Position]:
+        """Yields all positions between two given positions in a straight line (including the source and destination).
+        The positions must be aligned either horizontally or vertically.
+
+        Args:
+            source (Position): The starting position.
+            destination (Position): The ending position.
+
+        Raises:
+            ValueError: If the positions are not aligned horizontally or vertically.
+        """
+
         # horizontal line
         if source.row == destination.row:
             start, end = tools.min_max([source.column, destination.column])
@@ -76,6 +115,15 @@ def _is_square(data: Sequence[Sequence[Any]]) -> bool:
 
 
 class Grid[T]:
+    """Represents a square grid of data.
+    The grid is initialized with a sequence of sequences, where each inner sequence represents a row.
+
+    Attributes:
+        data (tuple[tuple[T, ...], ...]): The grid data.
+        rows (int): The number of rows in the grid.
+        columns (int): The number of columns in the grid.
+    """
+
     def __init__(self, data: Sequence[Sequence[T]], /) -> None:
         if len(data) == 0:
             raise ValueError('Grid data must have at least one row.')
@@ -94,31 +142,50 @@ class Grid[T]:
 
     @property
     def rows(self) -> int:
+        """Returns the number of rows in the grid."""
         return self._rows
 
     @property
     def columns(self) -> int:
+        """Returns the number of columns in the grid."""
         return self._columns
 
     @property
     def size(self) -> tuple[int, int]:
+        """Returns the size of the grid as (rows, columns)."""
         return self.rows, self.columns
 
     def get_rows(self) -> Iterator[Sequence[T]]:
+        """Yields each row in the grid."""
         for row in self._data:
             yield row
 
     def get_columns(self) -> Iterator[Sequence[T]]:
+        """Yields each column in the grid."""
         for column in zip(*self._data):
             yield column
 
     def transpose(self) -> Grid[T]:
+        """Returns a new Grid with rows and columns transposed."""
         transposed_data = tuple(zip(*self._data))
 
         return Grid(transposed_data)
 
     @staticmethod
     def from_flat[Item](data: Sequence[Item]) -> Grid[Item]:
+        """Creates a square grid from a flat sequence of data.
+        The length of the data must be a perfect square to form a square grid.
+
+        Args:
+            data (Sequence[Item]): The flat sequence of data to convert into a grid.
+
+        Returns:
+            Grid[Item]: A new Grid instance containing the data arranged in a square grid.
+
+        Raises:
+            ValueError: If the length of the data is not a perfect square.
+        """
+
         def _is_perfect_square_number(number: int) -> bool:
             if number < 0:
                 return False

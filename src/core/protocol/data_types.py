@@ -7,6 +7,7 @@ from core.game.objects.board import Board
 from core.game.objects.field import Field
 from core.game.objects.player import Player
 from core.game.objects.tile import Tile
+from core.game.types import Position
 
 
 class PlayerData(DataModel):
@@ -33,13 +34,15 @@ class TileData(DataModel):
     id: str
     symbol: str
     points: int
+    position: Position | None = None
 
     @classmethod
-    def from_tile(cls, tile: Tile) -> Self:
+    def from_tile(cls, tile: Tile, position: Position | None = None) -> Self:
         return cls(
             id=tile.id,
             symbol=tile.symbol,
             points=tile.points,
+            position=position,
         )
 
 

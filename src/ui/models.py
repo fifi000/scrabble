@@ -4,6 +4,7 @@ from typing import Self
 
 from core.data_model import DataModel
 from core.game.enums import FieldType
+from core.game.types import Position
 from core.protocol.data_types import BoardData, FieldData, PlayerData, TileData
 
 
@@ -74,6 +75,7 @@ class TileModel(DataModel):
     id: str
     symbol: str
     points: int
+    position: Position | None = None
 
     @classmethod
     def from_tile_data(cls, tile_data: TileData) -> Self:
@@ -81,13 +83,12 @@ class TileModel(DataModel):
             id=tile_data.id,
             symbol=tile_data.symbol,
             points=tile_data.points,
+            position=tile_data.position,
         )
 
     def to_tile_data(self) -> TileData:
         return TileData(
-            id=self.id,
-            symbol=self.symbol,
-            points=self.points,
+            id=self.id, symbol=self.symbol, points=self.points, position=self.position
         )
 
 
