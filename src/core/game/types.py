@@ -53,16 +53,16 @@ class Position(NamedTuple):
         return NotImplemented
 
     def __lt__(self, value: tuple[int, ...]) -> bool:
-        return super().__lt__(value)
+        return tuple.__lt__(self, value)
 
     def __le__(self, value: tuple[int, ...]) -> bool:
-        return super().__le__(value)
+        return tuple.__le__(self, value)
 
     def __gt__(self, value: tuple[int, ...]) -> bool:
-        return super().__gt__(value)
+        return tuple.__gt__(self, value)
 
     def __ge__(self, value: tuple[int, ...]) -> bool:
-        return super().__ge__(value)
+        return tuple.__ge__(self, value)
 
     def __repr__(self) -> str:
         return f'Position(row={self.row}, column={self.column})'
