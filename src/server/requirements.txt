@@ -1,5 +1,5 @@
 annotated-types==0.7.0
--e ..\\core
+-e git+https://github.com/fifi000/scrabble.git@fe2db5edd67e93a68851591354f5f8e6423ffc3b#egg=core&subdirectory=src\core
 pydantic==2.11.5
 pydantic_core==2.33.2
 typing-inspection==0.4.1

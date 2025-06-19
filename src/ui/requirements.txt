@@ -6,7 +6,7 @@ annotated-types==0.7.0
 attrs==25.3.0
 click==8.2.0
 colorama==0.4.6
--e ..\\core
+-e git+https://github.com/fifi000/scrabble.git@fe2db5edd67e93a68851591354f5f8e6423ffc3b#egg=core&subdirectory=src\core
 frozenlist==1.6.0
 idna==3.10
 Jinja2==3.1.6
