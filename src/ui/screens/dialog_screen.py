@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import override
+from typing import Any, override
 
 from textual import on
 from textual.app import ComposeResult
@@ -63,8 +63,10 @@ class DialogScreen[ScreenResultType](ModalScreen[ScreenResultType]):
         return DialogScreen[bool](yes_no)
 
     @staticmethod
-    def prompt(question: VisualType) -> DialogScreen[str]:
-        prompt = _Prompt(question=question)
+    def prompt(
+        question: VisualType, *, input_init_kwargs: dict[str, Any] | None = None
+    ) -> DialogScreen[str]:
+        prompt = _Prompt(question=question, input_init_kwargs=input_init_kwargs)
 
         return DialogScreen[str](prompt)
 
@@ -155,18 +157,21 @@ class _Prompt(Static):
         self,
         question: VisualType,
         *,
+        input_init_kwargs: dict[str, Any] | None = None,
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
     ) -> None:
         self.question = question
+        self.input_init_kwargs = input_init_kwargs or {}
+
         super().__init__(name=name, id=id, classes=classes)
 
     @override
     def compose(self) -> ComposeResult:
         yield Label(self.question, id='question')
         with Horizontal(id='buttons'):
-            input_ = Input()
+            input_ = Input(**self.input_init_kwargs)
             input_.focus()
             yield input_
 

@@ -113,7 +113,10 @@ class GameScreen(Screen):
 
         for i, blank in enumerate(blanks, start=1):
             value = await self.app.push_screen_wait(
-                DialogScreen.prompt(f'Choose letter for blank #{i}')
+                DialogScreen.prompt(
+                    f'Choose letter for blank #{i}',
+                    input_init_kwargs={'max_length': 1, 'valid_empty': False},
+                )
             )
             blank.symbol = value
 

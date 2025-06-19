@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import ParamSpec, overload
+from typing import overload
 
 from websockets import ServerConnection
 
@@ -31,15 +31,14 @@ from server.exceptions import (
     ServerError,
 )
 
-_P = ParamSpec('_P')
 logger = logging.getLogger(__name__)
 
 
-def handle_exception(
-    func: Callable[_P, Awaitable[None]],
-) -> Callable[_P, Awaitable[None]]:
+def handle_exception[**P](
+    func: Callable[P, Awaitable[None]],
+) -> Callable[P, Awaitable[None]]:
     @wraps(func)
-    async def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> None:
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> None:
         websocket = tools.find_arg(args, kwargs, ServerConnection)
         try:
             await func(*args, **kwargs)

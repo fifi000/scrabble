@@ -35,7 +35,7 @@ class GameHandler(BaseHandler):
         room.game.start()
 
         logging.info(
-            f'Game started in room {room.number}, with {len(room.game._players)} players'
+            f'Game started in room {room.number}, with {len(room.game.players)} players'
         )
 
         for ws, player in room.get_connected_players():
@@ -45,8 +45,8 @@ class GameHandler(BaseHandler):
                 server_data.NewGameData(
                     player=PlayerData.from_player(player, with_tiles=True),
                     current_player_id=room.game.current_player.id,
-                    players=[PlayerData.from_player(p) for p in room.game._players],
-                    board=BoardData.from_board(room.game._board),
+                    players=[PlayerData.from_player(p) for p in room.game.players],
+                    board=BoardData.from_board(room.game.board),
                 ),
             )
 
@@ -79,6 +79,11 @@ class GameHandler(BaseHandler):
         room.game.place_tiles(
             player=player,
             tile_positions=tile_positions,  # type: ignore[asignment]
+            blank_symbols=[
+                (tile, tile_data.symbol)
+                for tile_data in data.tiles_data
+                if (tile := player.get_tile_by_id(tile_data.id)).is_blank
+            ],
         )
 
         for ws, player in room.get_connected_players():
@@ -88,8 +93,8 @@ class GameHandler(BaseHandler):
                 server_data.NextTurnData(
                     player=PlayerData.from_player(player, with_tiles=True),
                     current_player_id=room.game.current_player.id,
-                    players=[PlayerData.from_player(p) for p in room.game._players],
-                    board=BoardData.from_board(room.game._board),
+                    players=[PlayerData.from_player(p) for p in room.game.players],
+                    board=BoardData.from_board(room.game.board),
                 ),
             )
 
@@ -126,8 +131,8 @@ class GameHandler(BaseHandler):
                 server_data.NextTurnData(
                     player=PlayerData.from_player(player, with_tiles=True),
                     current_player_id=room.game.current_player.id,
-                    players=[PlayerData.from_player(p) for p in room.game._players],
-                    board=BoardData.from_board(room.game._board),
+                    players=[PlayerData.from_player(p) for p in room.game.players],
+                    board=BoardData.from_board(room.game.board),
                 ),
             )
 
@@ -159,7 +164,7 @@ class GameHandler(BaseHandler):
                 server_data.NextTurnData(
                     player=PlayerData.from_player(player, with_tiles=True),
                     current_player_id=room.game.current_player.id,
-                    players=[PlayerData.from_player(p) for p in room.game._players],
-                    board=BoardData.from_board(room.game._board),
+                    players=[PlayerData.from_player(p) for p in room.game.players],
+                    board=BoardData.from_board(room.game.board),
                 ),
             )

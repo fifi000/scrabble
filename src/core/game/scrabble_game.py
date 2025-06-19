@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from functools import wraps
 from typing import assert_never
@@ -155,6 +155,14 @@ class ScrabbleGame:
             self.add_player(player)
 
     @property
+    def players(self) -> Collection[Player]:
+        return tuple(self._players)
+
+    @property
+    def board(self) -> Board:
+        return self._board
+
+    @property
     def language(self) -> Language:
         return self.config.language
 
@@ -250,7 +258,7 @@ class ScrabbleGame:
         self._verify_is_player_turn(player)
 
     def after_turn(self) -> None:
-        for field in self._board.get_fields():
+        for field in self.board.get_fields():
             field.is_tile_recently_placed = False
 
         self._move_count += 1
@@ -259,7 +267,11 @@ class ScrabbleGame:
 
     @player_move
     def place_tiles(
-        self, player: Player, tile_positions: list[tuple[Tile, Position]]
+        self,
+        player: Player,
+        tile_positions: list[tuple[Tile, Position]],
+        *,
+        blank_symbols: list[tuple[Tile, str]] | None = None,
     ) -> None:
         tiles, positions = tools.split_pairs(tile_positions)
 
@@ -268,7 +280,10 @@ class ScrabbleGame:
         self._verify_tiles_placements(positions)
         self._verify_tiles_ownership(player, tiles)
 
-        fields = self._board.place_tiles(tile_positions)
+        fields = self.board.place_tiles(tile_positions)
+
+        for tile, symbol in blank_symbols or []:
+            tile.set_blank_symbol(symbol)
 
         score = self._calculate_score(fields)
         player.add_score(score)
@@ -328,13 +343,13 @@ class ScrabbleGame:
         for position in positions:
             # field must exist on board
             try:
-                field = self._board.get_field(position)
+                field = self.board.get_field(position)
             except IndexError as e:
                 raise InvalidMoveError(
                     message='Field does not exist on board.',
                     details={
                         'position': position,
-                        'board_size': self._board.size,
+                        'board_size': self.board.size,
                     },
                 ) from e
 
@@ -370,7 +385,7 @@ class ScrabbleGame:
                 continue
 
             # if not just placed, then there should already have been a tile placed
-            field = self._board.get_field(position)
+            field = self.board.get_field(position)
             if field.tile is None:
                 raise InvalidMoveError(
                     message='Tiles must be placed in a continuous line.',
@@ -384,15 +399,15 @@ class ScrabbleGame:
         # is reachable from any player's position
         # but this way seems to be more readable and we get straightforward error messages
 
-        center_position = self._board.center_field.position
-        is_first_move = all(field.tile is None for field in self._board.get_fields())
+        center_position = self.board.center_field.position
+        is_first_move = all(field.tile is None for field in self.board.get_fields())
 
         # on first tile placement, tiles must go through the center field
         if is_first_move and center_position not in positions:
             raise InvalidMoveError(
                 message='First placement must go through the center field.',
                 details={
-                    'center_field': self._board.center_field.position,
+                    'center_field': self.board.center_field.position,
                     'positions': positions,
                 },
             )
@@ -409,7 +424,7 @@ class ScrabbleGame:
             for surrounding_position in surrounding_positions:
                 try:
                     # found adjacent tile that have been already there
-                    if self._board.get_field(surrounding_position).tile is not None:
+                    if self.board.get_field(surrounding_position).tile is not None:
                         break
                 except IndexError:
                     continue
@@ -512,12 +527,12 @@ class ScrabbleGame:
 
     def _get_created_words(self, positions: list[Position]) -> list[list[Field]]:
         horizontal_words = [
-            list(self._board.get_horizontal_fields(position))
+            list(self.board.get_horizontal_fields(position))
             for position in tools.distinct_by(positions, key=lambda x: x.row)
         ]
 
         vertical_words = [
-            list(self._board.get_vertical_fields(position))
+            list(self.board.get_vertical_fields(position))
             for position in tools.distinct_by(positions, key=lambda x: x.column)
         ]
 
