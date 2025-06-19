@@ -10,7 +10,7 @@ from core.protocol.message_types import ServerMessageType
 from server.communication import broadcast_to_players, send_to_player
 from server.exception_handler import handle_exception
 from server.handlers.base_handler import BaseHandler
-from server.room_manager import ConnectedPlayer, Room
+from server.room_manager import Room, User
 
 
 class RoomHandler(BaseHandler):
@@ -20,9 +20,7 @@ class RoomHandler(BaseHandler):
         logging.info(f'Joining player {data.player_name} to room {data.room_number}')
         player = Player(name=data.player_name, id=str(uuid.uuid4()))
 
-        room = self.room_manager.join_room(
-            data.room_number, ConnectedPlayer(websocket, player)
-        )
+        room = self.room_manager.join_room(data.room_number, User(websocket, player))
 
         logging.info(f'Player {data.player_name} joined room {data.room_number}')
 

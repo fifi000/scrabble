@@ -4,8 +4,8 @@ from typing import NamedTuple
 
 from websockets.asyncio.server import ServerConnection
 
-from core.game.scrabble_game import ScrabbleGame
 from core.game.objects.player import Player
+from core.game.scrabble_game import ScrabbleGame
 from server.exceptions import (
     DuplicatedConnectionError,
     InvalidPlayerData,
@@ -14,7 +14,7 @@ from server.exceptions import (
 )
 
 
-class ConnectedPlayer(NamedTuple):
+class User(NamedTuple):
     websocket: ServerConnection
     player: Player
 
@@ -23,10 +23,10 @@ class ConnectedPlayer(NamedTuple):
 class Room:
     def __init__(self, number: int) -> None:
         self.number = number
-        self._connected_players: list[ConnectedPlayer] = []
+        self._connected_players: list[User] = []
         self.game: ScrabbleGame | None = None
 
-    def add(self, connected_player: ConnectedPlayer):
+    def add(self, connected_player: User):
         for ws, player in self.get_connected_players():
             # same connection
             if ws.id == connected_player.websocket.id:
@@ -69,7 +69,7 @@ class Room:
         for player_client in self._connected_players:
             yield player_client.websocket
 
-    def get_connected_players(self) -> Iterator[ConnectedPlayer]:
+    def get_connected_players(self) -> Iterator[User]:
         for player_client in self._connected_players:
             yield player_client
 
@@ -91,7 +91,7 @@ class RoomManager:
 
         return room
 
-    def join_room(self, room_number: int, connected_player: ConnectedPlayer) -> Room:
+    def join_room(self, room_number: int, connected_player: User) -> Room:
         try:
             room = self.rooms_mapping[room_number]
         except KeyError as e:

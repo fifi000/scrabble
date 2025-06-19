@@ -5,11 +5,13 @@ from core.protocol.data_types import BoardData, PlayerData
 class NewRoomData(DataModel):
     room_number: int
     player: PlayerData
+    session_id: str
 
 
 class JoinRoomData(DataModel):
     room_number: int
     player: list[PlayerData]
+    session_id: str
 
 
 class NewPlayerData(DataModel):
