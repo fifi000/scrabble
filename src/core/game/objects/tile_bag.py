@@ -49,6 +49,13 @@ class TileBag:
     def remaining_tiles_count(self) -> int:
         return len(self._remaining_tiles)
 
+    def all_letters(self, with_blank: bool = True) -> set[str]:
+        return set(
+            tile.symbol
+            for tile in self._all_tiles
+            if not with_blank and not tile.is_blank
+        )
+
     def scrabble(self, n: int) -> list[Tile]:
         n = min(n, len(self._remaining_tiles))
 
