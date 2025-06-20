@@ -5,7 +5,7 @@ from typing import override
 
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Container, VerticalGroup
+from textual.containers import VerticalScroll
 from textual.message import Message
 from textual.reactive import reactive, var
 from textual.screen import Screen
@@ -47,9 +47,10 @@ class GameScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header(name='Scrabble')
 
-        with Container():
+        with VerticalScroll():
             yield Board()
-            with VerticalGroup():
+
+            with VerticalScroll(id='right-panel'):
                 yield TileRack()
                 yield MoveButtons()
                 yield ScoreBoard()
@@ -118,7 +119,9 @@ class GameScreen(Screen):
                     input_init_kwargs={'max_length': 1, 'valid_empty': False},
                 )
             )
-            blank.symbol = value
+            # TODO: in the future lowercase letter may be valid, when room configuration will be added
+            #       so this would be better to check if the `value` is valid then `value.upper()`
+            blank.symbol = value.upper()
 
         self.post_message(self.SubmitTiles(tile_models))
 

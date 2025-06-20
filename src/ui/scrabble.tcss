@@ -123,5 +123,5 @@ MoveButtons {
 ScoreBoard {
   border: round;
   border-title-align: center;
-  min-height: 10;
+  max-height: 15;
 }

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Iterable
 from dataclasses import dataclass
 from functools import wraps
 from typing import assert_never
@@ -274,15 +274,17 @@ class ScrabbleGame:
         blank_symbols: list[tuple[Tile, str]] | None = None,
     ) -> None:
         tiles, positions = tools.split_pairs(tile_positions)
+        blank_symbols = blank_symbols or []
 
         self._verify_min_tiles(tiles)
         self._verify_max_tiles(tiles)
         self._verify_tiles_placements(positions)
         self._verify_tiles_ownership(player, tiles)
+        self._verify_is_valid_symbols([symbol for tile, symbol in blank_symbols])
 
         fields = self.board.place_tiles(tile_positions)
 
-        for tile, symbol in blank_symbols or []:
+        for tile, symbol in blank_symbols:
             tile.set_blank_symbol(symbol)
 
         score = self._calculate_score(fields)
@@ -503,6 +505,18 @@ class ScrabbleGame:
                     'player_name': player.name,
                 },
             )
+
+    def _verify_is_valid_symbols(self, symbols: Iterable[str]) -> None:
+        valid_letters = self._tile_bag.all_letters(with_blank=False)
+
+        for symbol in symbols:
+            if symbol not in valid_letters:
+                raise InvalidOperationError(
+                    message=f'Invalid symbol: {symbols}.',
+                    details={
+                        'valid_symbols': valid_letters,
+                    },
+                )
 
     # --- score ---
 
