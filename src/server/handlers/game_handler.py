@@ -13,13 +13,18 @@ from server.exceptions import (
     NoActiveGameError,
     PlayerNotInRoomError,
 )
-from server.handlers.base_handler import BaseHandler
+from server.room_manager import RoomManager
 
 
-class GameHandler(BaseHandler):
+class GameHandler:
+    def __init__(self, room_manager: RoomManager) -> None:
+        self.room_manager = room_manager
+
     @handle_exception
-    async def handle_start_game(self, websocket: ServerConnection) -> None:
-        room = self.room_manager.find_room_by_connection(websocket)
+    async def handle_start_game(
+        self, websocket: ServerConnection, data: client_data.StartGameData
+    ) -> None:
+        room = self.room_manager.find_room(data.session_id)
 
         if room is None:
             raise NoActiveConnectionError()
@@ -29,7 +34,7 @@ class GameHandler(BaseHandler):
 
         logging.info(f'Starting game in room {room.number}...')
 
-        players = list(room.get_players())
+        players = [user.player for user in room.get_users()]
         room.game = ScrabbleGame(config=GameConfig.default(), players=players)
 
         room.game.start()
@@ -38,12 +43,12 @@ class GameHandler(BaseHandler):
             f'Game started in room {room.number}, with {len(room.game.players)} players'
         )
 
-        for ws, player in room.get_connected_players():
+        for user in room.get_users():
             await send_to_player(
-                ws,
+                user.websocket,
                 ServerMessageType.NEW_GAME,
                 server_data.NewGameData(
-                    player=PlayerData.from_player(player, with_tiles=True),
+                    player=PlayerData.from_player(user.player, with_tiles=True),
                     current_player_id=room.game.current_player.id,
                     players=[PlayerData.from_player(p) for p in room.game.players],
                     board=BoardData.from_board(room.game.board),
@@ -54,7 +59,7 @@ class GameHandler(BaseHandler):
     async def handle_place_tiles(
         self, websocket: ServerConnection, data: client_data.PlaceTilesData
     ):
-        room = self.room_manager.find_room_by_connection(websocket)
+        room = self.room_manager.find_room(data.session_id)
 
         if room is None:
             raise NoActiveConnectionError()
@@ -62,36 +67,38 @@ class GameHandler(BaseHandler):
         if room.game is None:
             raise NoActiveGameError(room_number=room.number)
 
-        player = room.find_player_by_connection(websocket)
+        user = room.find_user(data.session_id)
 
-        if player is None:
+        if user is None:
             raise PlayerNotInRoomError(room_number=room.number)
 
-        logging.info(f'Player {player.name} is placing tiles in room {room.number}')
+        logging.info(
+            f'Player {user.player.name} is placing tiles in room {room.number}'
+        )
 
         tile_positions = [
-            (player.get_tile_by_id(tile_data.id), tile_data.position)
+            (user.player.get_tile_by_id(tile_data.id), tile_data.position)
             for tile_data in data.tiles_data
         ]
 
         assert all(position for tile, position in tile_positions)
 
         room.game.place_tiles(
-            player=player,
+            player=user.player,
             tile_positions=tile_positions,  # type: ignore[asignment]
             blank_symbols=[
                 (tile, tile_data.symbol)
                 for tile_data in data.tiles_data
-                if (tile := player.get_tile_by_id(tile_data.id)).is_blank
+                if (tile := user.player.get_tile_by_id(tile_data.id)).is_blank
             ],
         )
 
-        for ws, player in room.get_connected_players():
+        for user in room.get_users():
             await send_to_player(
-                ws,
+                user.websocket,
                 ServerMessageType.NEXT_TURN,
                 server_data.NextTurnData(
-                    player=PlayerData.from_player(player, with_tiles=True),
+                    player=PlayerData.from_player(user.player, with_tiles=True),
                     current_player_id=room.game.current_player.id,
                     players=[PlayerData.from_player(p) for p in room.game.players],
                     board=BoardData.from_board(room.game.board),
@@ -102,7 +109,7 @@ class GameHandler(BaseHandler):
     async def handle_exchange_tiles(
         self, websocket: ServerConnection, data: client_data.ExchangeTilesData
     ):
-        room = self.room_manager.find_room_by_connection(websocket)
+        room = self.room_manager.find_room(data.session_id)
 
         if room is None:
             raise NoActiveConnectionError()
@@ -110,26 +117,29 @@ class GameHandler(BaseHandler):
         if room.game is None:
             raise NoActiveGameError(room_number=room.number)
 
-        player = room.find_player_by_connection(websocket)
+        user = room.find_user(data.session_id)
 
-        if player is None:
+        if user is None:
             raise PlayerNotInRoomError(room_number=room.number)
 
-        logging.info(f'Player {player.name} is exchanging tiles in room {room.number}')
+        logging.info(
+            f'Player {user.player.name} is exchanging tiles in room {room.number}'
+        )
 
         room.game.exchange_tiles(
-            player=player,
+            player=user.player,
             tiles=[
-                player.get_tile_by_id(tile_data.id) for tile_data in data.tiles_data
+                user.player.get_tile_by_id(tile_data.id)
+                for tile_data in data.tiles_data
             ],
         )
 
-        for ws, player in room.get_connected_players():
+        for user in room.get_users():
             await send_to_player(
-                ws,
+                user.websocket,
                 ServerMessageType.NEXT_TURN,
                 server_data.NextTurnData(
-                    player=PlayerData.from_player(player, with_tiles=True),
+                    player=PlayerData.from_player(user.player, with_tiles=True),
                     current_player_id=room.game.current_player.id,
                     players=[PlayerData.from_player(p) for p in room.game.players],
                     board=BoardData.from_board(room.game.board),
@@ -137,8 +147,10 @@ class GameHandler(BaseHandler):
             )
 
     @handle_exception
-    async def handle_skip_turn(self, websocket: ServerConnection):
-        room = self.room_manager.find_room_by_connection(websocket)
+    async def handle_skip_turn(
+        self, websocket: ServerConnection, data: client_data.SkipTurnData
+    ):
+        room = self.room_manager.find_room(data.session_id)
 
         if room is None:
             raise NoActiveConnectionError()
@@ -146,23 +158,52 @@ class GameHandler(BaseHandler):
         if room.game is None:
             raise NoActiveGameError(room_number=room.number)
 
-        player = room.find_player_by_connection(websocket)
+        user = room.find_user(data.session_id)
 
-        if player is None:
+        if user is None:
             raise PlayerNotInRoomError(room_number=room.number)
 
         logging.info(
-            f'Player {player.name} is skipping their turn in room {room.number}'
+            f'Player {user.player.name} is skipping their turn in room {room.number}'
         )
 
-        room.game.skip_turn(player=player)
+        room.game.skip_turn(player=user.player)
 
-        for ws, player in room.get_connected_players():
+        for user in room.get_users():
             await send_to_player(
-                ws,
+                user.websocket,
                 ServerMessageType.NEXT_TURN,
                 server_data.NextTurnData(
-                    player=PlayerData.from_player(player, with_tiles=True),
+                    player=PlayerData.from_player(user.player, with_tiles=True),
+                    current_player_id=room.game.current_player.id,
+                    players=[PlayerData.from_player(p) for p in room.game.players],
+                    board=BoardData.from_board(room.game.board),
+                ),
+            )
+
+    @handle_exception
+    async def handle_game_rejoin(
+        self, websocket: ServerConnection, data: client_data.RejoinData
+    ):
+        room = self.room_manager.find_room(data.session_id)
+
+        if room is None:
+            raise NoActiveConnectionError()
+
+        if room.game is None:
+            raise NoActiveGameError(room_number=room.number)
+
+        user = room.find_user(data.session_id)
+
+        if user is None:
+            raise PlayerNotInRoomError(room_number=room.number)
+
+        for user in room.get_users():
+            await send_to_player(
+                user.websocket,
+                ServerMessageType.REJOIN_GAME,
+                server_data.RejoinGameData(
+                    player=PlayerData.from_player(user.player, with_tiles=True),
                     current_player_id=room.game.current_player.id,
                     players=[PlayerData.from_player(p) for p in room.game.players],
                     board=BoardData.from_board(room.game.board),

@@ -12,8 +12,14 @@ class JoinRoomData(DataModel):
     player_name: str
 
 
+class RejoinData(DataModel):
+    room_number: int
+    session_id: str
+
+
 class StartGameData(DataModel):
     room_number: int
+    session_id: str
 
 
 # --- game moves ---
@@ -21,7 +27,13 @@ class StartGameData(DataModel):
 
 class PlaceTilesData(DataModel):
     tiles_data: list[TileData]
+    session_id: str
 
 
 class ExchangeTilesData(DataModel):
     tiles_data: list[TileData]
+    session_id: str
+
+
+class SkipTurnData(DataModel):
+    session_id: str

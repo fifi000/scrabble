@@ -89,7 +89,7 @@ RoomScreen {
 # --- start menu ---
 
 StartMenuScreen {
-  Grid {
+  #form {
       background: $boost;
       padding: 1 2;
       height: auto;
@@ -105,6 +105,14 @@ StartMenuScreen {
           padding: 1;
           text-align: right;
       }
+  }
+
+  #buttons {
+    column-span: 2;
+     
+    Button {
+      margin-right: 1;
+    }
   }
 }
 

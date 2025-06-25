@@ -4,11 +4,14 @@ import random
 from dataclasses import dataclass
 from typing import override
 
+from textual import on
 from textual.app import ComposeResult
-from textual.containers import Grid
+from textual.containers import Grid, HorizontalGroup
 from textual.message import Message
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label
+
+from ui.utils import session_manager
 
 
 @dataclass
@@ -27,9 +30,13 @@ class StartMenuScreen(Screen):
     class CreateRoom(Message):
         form_info: FormInfo
 
+    @dataclass
+    class Rejoin(Message):
+        form_info: FormInfo
+
     @override
     def compose(self) -> ComposeResult:
-        with Grid():
+        with Grid(id='form'):
             yield Label('Server URL')
             yield Input(
                 placeholder='ws://localhost:8765',
@@ -45,8 +52,17 @@ class StartMenuScreen(Screen):
                 id='room_number', value=str(random.randint(1, 100_000)), type='integer'
             )
 
-            yield Button.success('Join', id='join')
-            yield Button.warning('Create', id='create')
+            with HorizontalGroup(id='buttons'):
+                yield Button.success('Join', id='join')
+                yield Button.warning('Create', id='create')
+                yield Button('Rejoin', id='rejoin', variant='primary', disabled=True)
+
+    @on(Input.Changed, '#server_url')
+    def _check_rejoin(self, event: Input.Changed):
+        sessions = session_manager.get_saved_sessions(self.app)
+
+        sessions = [session for session in sessions if session.url == event.value]
+        self.query_one('#rejoin', Button).disabled = not sessions
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         form_info = FormInfo(
@@ -63,6 +79,10 @@ class StartMenuScreen(Screen):
             case 'create':
                 self.loading = True
                 self.post_message(self.CreateRoom(form_info))
+
+            case 'rejoin':
+                self.loading = True
+                self.post_message(self.Rejoin(form_info))
 
             case _:
                 raise Exception(f'Unsupported button id {event.button.id!r}')

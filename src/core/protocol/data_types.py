@@ -10,6 +10,13 @@ from core.game.objects.tile import Tile
 from core.game.types import Position
 
 
+class GameStateData(DataModel):
+    player: PlayerData
+    current_player_id: str
+    players: list[PlayerData]
+    board: BoardData
+
+
 class PlayerData(DataModel):
     id: str
     name: str

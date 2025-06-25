@@ -1,6 +1,8 @@
+from __future__ import annotations
+
+import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import NamedTuple
 
 from websockets.asyncio.server import ServerConnection
 
@@ -14,63 +16,62 @@ from server.exceptions import (
 )
 
 
-class User(NamedTuple):
+@dataclass
+class User:
     websocket: ServerConnection
     player: Player
+    session_id: str
+    room: Room
 
 
-@dataclass
 class Room:
     def __init__(self, number: int) -> None:
         self.number = number
-        self._connected_players: list[User] = []
+        self._users: list[User] = []
         self.game: ScrabbleGame | None = None
 
-    def add(self, connected_player: User):
-        for ws, player in self.get_connected_players():
+    def add(self, new_user: User):
+        for user in self.get_users():
             # same connection
-            if ws.id == connected_player.websocket.id:
+            if user.websocket.id == new_user.websocket.id:
                 raise DuplicatedConnectionError(
-                    player_name=player.name, room_number=self.number
+                    player_name=new_user.player.name, room_number=self.number
                 )
             # different connection, same player id
-            elif player.id == connected_player.player.id:
+            elif user.player.id == new_user.player.id:
                 raise InvalidPlayerData(
-                    message=f'Player with ID {connected_player.player.id!r} already exists.',
+                    message=f'Player with ID {new_user.player.id!r} already exists.',
                     details={
-                        'player_id': connected_player.player.id,
+                        'player_id': new_user.player.id,
                         'room_number': self.number,
                     },
                 )
             # different connection, same player name
-            elif player.name == connected_player.player.name:
+            elif user.player.name == new_user.player.name:
                 raise InvalidPlayerData(
-                    message=f'Player with name {connected_player.player.name!r} already exists.',
+                    message=f'Player with name {new_user.player.name!r} already exists.',
                     details={
-                        'player_name': connected_player.player.name,
+                        'player_name': new_user.player.name,
                         'room_number': self.number,
                     },
                 )
 
-        self._connected_players.append(connected_player)
+        self._users.append(new_user)
 
-    def find_player_by_connection(self, websocket: ServerConnection) -> Player | None:
-        for ws, player in self._connected_players:
-            if ws.id == websocket.id:
-                return player
+    def update_user(self, session_id: str, websocket: ServerConnection):
+        assert (user := self.find_user(session_id))
+
+        user.websocket = websocket
+
+    def find_user(self, session_id: str) -> User | None:
+        for user in self.get_users():
+            if user.session_id == session_id:
+                return user
 
         return None
 
-    def get_players(self) -> Iterator[Player]:
-        for player_client in self._connected_players:
-            yield player_client.player
-
-    def get_websockets(self) -> Iterator[ServerConnection]:
-        for player_client in self._connected_players:
-            yield player_client.websocket
-
-    def get_connected_players(self) -> Iterator[User]:
-        for player_client in self._connected_players:
+    def get_users(self) -> Iterator[User]:
+        for player_client in self._users:
             yield player_client
 
 
@@ -91,29 +92,28 @@ class RoomManager:
 
         return room
 
-    def join_room(self, room_number: int, connected_player: User) -> Room:
+    def join_room(
+        self, room_number: int, websocket: ServerConnection, player: Player
+    ) -> User:
         try:
             room = self.rooms_mapping[room_number]
         except KeyError as e:
             raise RoomNotFoundError(room_number=room_number) from e
 
-        room.add(connected_player)
+        user = User(websocket, player, str(uuid.uuid4()), room)
 
-        return room
+        room.add(user)
+
+        return user
 
     def get_rooms(self) -> Iterator[Room]:
         for room in self.rooms_mapping.values():
             yield room
 
-    def get_connections(self) -> Iterator[ServerConnection]:
-        for room in self.rooms_mapping.values():
-            for ws in room.get_websockets():
-                yield ws
-
-    def find_room_by_connection(self, websocket: ServerConnection) -> Room | None:
-        for room in self.rooms_mapping.values():
-            for ws in room.get_websockets():
-                if ws.id == websocket.id:
+    def find_room(self, session_id: str) -> Room | None:
+        for room in self.get_rooms():
+            for user in room.get_users():
+                if user.session_id == session_id:
                     return room
 
         return None

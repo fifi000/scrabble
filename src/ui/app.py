@@ -1,6 +1,10 @@
+import sys
+from typing import assert_never
+
 from textual import log, work
 from textual.app import App
-from textual.reactive import var
+from textual.driver import Driver
+from textual.types import CSSPathType
 
 from core.protocol import client_data, server_data
 from core.protocol.errors import ErrorData
@@ -12,13 +16,50 @@ from ui.screens.error_screen import ErrorScreen
 from ui.screens.game_screen import GameScreen
 from ui.screens.room_screen import RoomScreen
 from ui.screens.start_menu_screen import StartMenuScreen
+from ui.storage_manager import StorageManager
 
 
 class ScrabbleApp(App[None]):
     CSS_PATH = 'scrabble.tcss'
     TITLE = 'Scrabble'
 
-    _game_client: var[GameClient | None] = var(None)
+    def __init__(
+        self,
+        driver_class: type[Driver] | None = None,
+        css_path: CSSPathType | None = None,
+        watch_css: bool = False,
+        ansi_color: bool = False,
+    ):
+        super().__init__(
+            driver_class=driver_class,
+            css_path=css_path,
+            watch_css=watch_css,
+            ansi_color=ansi_color,
+        )
+        self._game_client: GameClient | None = None
+
+        storage_manager_class = self._get_storage_manager_class()
+        self._storage_manager = storage_manager_class(self, 'feefee-scrabble')
+
+    def _get_storage_manager_class(self) -> type[StorageManager]:
+        if self.is_web:
+            from ui.storage_managers.web_storage_manager import WebStorageManager
+
+            return WebStorageManager
+        elif sys.platform == 'win32':
+            from ui.storage_managers.windows_storage_manager import (
+                WindowsStorageManager,
+            )
+
+            return WindowsStorageManager
+        elif sys.platform == 'darwin':
+            from ui.storage_managers.mac_os_storage_manager import MacOSStorageManager
+
+            return MacOSStorageManager
+        else:
+            from ui.storage_managers.linux_storage_manager import LinuxStorageManager
+
+            return LinuxStorageManager
 
     def on_mount(self) -> None:
         self._game_client = GameClient(self.handle_server_message)
@@ -30,6 +71,10 @@ class ScrabbleApp(App[None]):
             raise RuntimeError('Game client is not initialized.')
 
         return self._game_client
+
+    @property
+    def storage_manager(self) -> StorageManager:
+        return self._storage_manager
 
     # --- RoomScreen - events ---
 
@@ -72,7 +117,9 @@ class ScrabbleApp(App[None]):
         tiles_data = [model.to_tile_data() for model in message.tile_models]
         await self.game_client.send(
             type=ClientMessageType.PLACE_TILES,
-            data=client_data.PlaceTilesData(tiles_data=tiles_data).to_dict(),
+            data=client_data.PlaceTilesData(
+                tiles_data=tiles_data, session_id=self.game_client.session_id
+            ).to_dict(),
         )
 
     async def on_game_screen_exchange_tiles(
@@ -81,7 +128,9 @@ class ScrabbleApp(App[None]):
         tiles_data = [model.to_tile_data() for model in message.tile_models]
         await self.game_client.send(
             type=ClientMessageType.EXCHANGE_TILES,
-            data=client_data.ExchangeTilesData(tiles_data=tiles_data).to_dict(),
+            data=client_data.ExchangeTilesData(
+                tiles_data=tiles_data, session_id=self.game_client.session_id
+            ).to_dict(),
         )
 
     async def on_game_screen_skip_turn(self, message: GameScreen.SkipTurn) -> None:
@@ -91,11 +140,13 @@ class ScrabbleApp(App[None]):
 
     @work(exclusive=True)
     async def handle_new_room(self, data: server_data.NewRoomData) -> None:
+        self.game_client.session_id = data.session_id
         screen = RoomScreen(data.room_number, [data.player.name])
         await self.switch_screen(screen)
 
     @work(exclusive=True)
     async def handle_join_room(self, data: server_data.JoinRoomData) -> None:
+        self.game_client.session_id = data.session_id
         screen = RoomScreen(data.room_number, [info.name for info in data.player])
         await self.switch_screen(screen)
 
@@ -157,6 +208,25 @@ class ScrabbleApp(App[None]):
                 data = server_data.JoinRoomData.from_dict(message.data)
                 print(f'Processing join room: {data.room_number}')
                 self.handle_join_room(data)
+
+            case ServerMessageType.REJOIN_ROOM:
+                # assert message.data
+                # data = server_data.JoinRoomData.from_dict(message.data)
+                # print(f'Processing join room: {data.room_number}')
+                # self.handle_join_room(data)
+
+            case ServerMessageType.REJOIN_GAME:
+                # assert message.data
+                # data = server_data.NewGameData.from_dict(message.data)
+                # print('Processing new game start')
+                # self.handle_new_game(data)
+
+            case ServerMessageType.PLAYER_REJOIN:
+                # assert message.data
+                # data = server_data.NewGameData.from_dict(message.data)
+                # print('Processing new game start')
+                # self.handle_new_game(data)
+        
 
             case ServerMessageType.NEW_GAME:
                 assert message.data
