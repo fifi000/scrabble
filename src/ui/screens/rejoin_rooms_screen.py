@@ -1,0 +1,40 @@
+from textual.screen import ModalScreen
+
+
+class RejoinRoomsScreen(ModalScreen):
+    # CSS = """
+    #     ErrorScreen {
+    #         #container {
+    #             border: heavy $accent;
+    #             margin: 4 8;
+    #             scrollbar-gutter: stable;
+                
+    #             Pretty {
+    #                 width: auto;
+    #             }
+    #         }
+    #     }
+    # """
+
+    # BINDINGS = [('escape', 'dismiss', 'Dismiss')]
+
+    # def __init__(
+    #     self,
+    #     object: Any,
+    #     *,
+    #     name: str | None = None,
+    #     id: str | None = None,
+    #     classes: str | None = None,
+    # ) -> None:
+    #     super().__init__(name=name, id=id, classes=classes)
+    #     self.object = object
+
+    # @override
+    # def compose(self) -> ComposeResult:
+    #     with ScrollableContainer(id='container'):
+    #         yield Pretty(self.object)
+
+    # def on_mount(self) -> None:
+    #     widget = self.query_one('#container')
+    #     widget.border_title = 'Error Message'
+    #     widget.border_subtitle = 'Escape to close'

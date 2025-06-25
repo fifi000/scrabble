@@ -1,10 +1,11 @@
 import sys
 from typing import assert_never
 
-from textual import log, work
+from textual import log, on, work
 from textual.app import App
 from textual.driver import Driver
 from textual.types import CSSPathType
+from textual.widgets import Button, Input
 
 from core.protocol import client_data, server_data
 from core.protocol.errors import ErrorData
@@ -80,6 +81,7 @@ class ScrabbleApp(App[None]):
 
     async def on_room_screen_start_game(self, message: RoomScreen.StartGame):
         await self.game_client.send(type=ClientMessageType.START_GAME)
+    
 
     # --- StartMenuScreen - events ---
 
@@ -108,6 +110,27 @@ class ScrabbleApp(App[None]):
                 player_name=message.form_info.player_name,
             ).to_dict(),
         )
+    
+    async def on_start_menu_screen_rejoin(
+        self, message: StartMenuScreen.Rejoin
+    ) -> None:
+        await self.game_client.connect(message.form_info.server_url)
+
+        await self.game_client.send(
+            type=ClientMessageType.CREATE_ROOM,
+            data=client_data.CreateRoomData(
+                room_number=message.form_info.room_number,
+                player_name=message.form_info.player_name,
+            ).to_dict(),
+        )
+
+    async def on_start_menu_screen_input_changed(
+        self, event: Input.Changed
+    ) -> None:
+        sessions = self.storage_manager.read_sessions()
+
+        sessions = [info for info in sessions if info['url'] == event.value]
+        self.screen.query_one('#rejoin', Button).disabled = not sessions
 
     # --- GameScreen ---
 

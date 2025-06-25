@@ -5,7 +5,7 @@ from typing import Any
 from textual.app import App
 
 ConfigModel = dict[str, Any]
-SessionModel = dict[str, Any]
+SessionModel = list[dict[str, Any]]
 
 
 class StorageManager(ABC):

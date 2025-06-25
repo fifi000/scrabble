@@ -11,8 +11,6 @@ from textual.message import Message
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label
 
-from ui.utils import session_manager
-
 
 @dataclass
 class FormInfo:
@@ -56,13 +54,6 @@ class StartMenuScreen(Screen):
                 yield Button.success('Join', id='join')
                 yield Button.warning('Create', id='create')
                 yield Button('Rejoin', id='rejoin', variant='primary', disabled=True)
-
-    @on(Input.Changed, '#server_url')
-    def _check_rejoin(self, event: Input.Changed):
-        sessions = session_manager.get_saved_sessions(self.app)
-
-        sessions = [session for session in sessions if session.url == event.value]
-        self.query_one('#rejoin', Button).disabled = not sessions
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         form_info = FormInfo(
