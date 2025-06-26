@@ -69,8 +69,8 @@ class Board(Grid):
             return 0
         field = self.fields[0]
 
-        assert field.styles.width is not None, 'Field does not have width'
-        assert field.styles.width.unit == Unit.CELLS, 'Field does not width in cells'
+        if field.styles.width is None or field.styles.width.unit != Unit.CELLS:
+            return 0
 
         column_width = int(field.styles.width.value)
         lines = self.columns + 1

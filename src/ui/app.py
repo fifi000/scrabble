@@ -15,6 +15,7 @@ from ui.game_client import GameClient
 from ui.models import BoardModel, PlayerModel
 from ui.screens.error_screen import ErrorScreen
 from ui.screens.game_screen import GameScreen
+from ui.screens.rejoin_rooms_screen import RejoinRoomsScreen
 from ui.screens.room_screen import RoomScreen
 from ui.screens.start_menu_screen import StartMenuScreen
 from ui.storage_manager import StorageManager
@@ -114,22 +115,19 @@ class ScrabbleApp(App[None]):
     async def on_start_menu_screen_rejoin(
         self, message: StartMenuScreen.Rejoin
     ) -> None:
-        await self.game_client.connect(message.form_info.server_url)
+        sessions = self.storage_manager.read_sessions()
+        sessions = [info for info in sessions if info.url == message.form_info.server_url]
 
-        await self.game_client.send(
-            type=ClientMessageType.CREATE_ROOM,
-            data=client_data.CreateRoomData(
-                room_number=message.form_info.room_number,
-                player_name=message.form_info.player_name,
-            ).to_dict(),
-        )
+        screen = RejoinRoomsScreen()
+        screen.update_sessions(sessions)
+        await self.push_screen_wait(screen)
 
     async def on_start_menu_screen_input_changed(
         self, event: Input.Changed
     ) -> None:
         sessions = self.storage_manager.read_sessions()
 
-        sessions = [info for info in sessions if info['url'] == event.value]
+        sessions = [info for info in sessions if info.url == event.value]
         self.screen.query_one('#rejoin', Button).disabled = not sessions
 
     # --- GameScreen ---

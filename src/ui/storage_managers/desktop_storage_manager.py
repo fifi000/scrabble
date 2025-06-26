@@ -1,5 +1,6 @@
 import json
 from abc import abstractmethod
+from collections.abc import Collection, Iterable
 from pathlib import Path
 from typing import override
 
@@ -49,17 +50,26 @@ class DesktopStorageManager(StorageManager):
         """Get the path to the sessions location. None if web app."""
 
     @override
-    def read_sessions(self) -> SessionModel:
+    def read_sessions(self) -> Collection[SessionModel]:
         """Read the sessions from storage."""
         json_text = self.sessions_file_path.read_text('utf8')
-        config = json.loads(json_text) or {}
+        sessions = json.loads(json_text) or []
 
-        assert isinstance(config, dict), f'Sessions must be a dict, got {type(config)}'
+        assert isinstance(sessions, list), (
+            f'Sessions must be a list, got {type(sessions)}'
+        )
 
-        return config
+        return sessions
 
     @override
-    def write_sessions(self, sessions: SessionModel) -> None:
+    def write_sessions(self, sessions: Iterable[SessionModel]) -> None:
         """Write the sessions to storage."""
         json_text = json.dumps(sessions, indent=2, ensure_ascii=False)
-        self.config_file_path.write_text(json_text, encoding='utf8')
+        self.sessions_file_path.write_text(json_text, encoding='utf8')
+
+    @override
+    def add_session(self, session: SessionModel) -> None:
+        sessions = list(self.read_sessions())
+        sessions.append(session)
+
+        self.write_sessions(sessions)

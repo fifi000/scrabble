@@ -1,3 +1,4 @@
+from collections.abc import Collection, Iterable
 from typing import Any, override
 
 from textual.app import App
@@ -12,7 +13,7 @@ class WebStorageManager(StorageManager):
         super().__init__(app, app_name)
 
         self._config: ConfigModel = {}
-        self._sessions: SessionModel = {}
+        self._sessions: list[SessionModel] = []
 
     # --- Config ---
 
@@ -46,11 +47,15 @@ class WebStorageManager(StorageManager):
         return None
 
     @override
-    def read_sessions(self) -> SessionModel:
+    def read_sessions(self) -> Collection[SessionModel]:
         """Read the sessions from storage."""
         return self._sessions
 
     @override
-    def write_sessions(self, sessions: SessionModel) -> None:
+    def write_sessions(self, sessions: Iterable[SessionModel]) -> None:
         """Write the sessions to storage."""
-        self._sessions = sessions
+        self._sessions = list(sessions)
+
+    @override
+    def add_session(self, session: SessionModel) -> None:
+        self._sessions.append(session)
