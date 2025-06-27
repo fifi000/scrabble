@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import datetime
 from typing import override
 
 from textual import on
@@ -37,7 +38,9 @@ class RejoinRoomsScreen(ModalScreen[SessionModel | None]):
             if not self.sessions:
                 self.sessions = [SessionModel(id='', room_number=0, uri='')]
 
-            for session in self.sessions:
+            for session in sorted(
+                self.sessions, key=lambda x: datetime.fromisoformat(x.datetime)
+            ):
                 yield RoomInfo(session)
 
     def update_sessions(self, sessions: Iterable[SessionModel]) -> None:

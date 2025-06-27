@@ -53,10 +53,8 @@ class Board(Grid):
             return 0
         field = self.fields[0]
 
-        assert field.styles.height is not None, 'Field does not have height'
-        assert field.styles.height.unit == Unit.CELLS, (
-            f'Field does not have height in {Unit.CELLS!r}'
-        )
+        if field.styles.height is None or field.styles.height.unit != Unit.CELLS:
+            return 0
 
         row_height = int(field.styles.height.value)
         lines = self.rows + 1

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import override
 
 from textual import on
@@ -50,12 +51,14 @@ class RoomInfo(Static):
 
     @on(Button.Pressed, '#rejoin')
     def handle_rejoin(self, event: Button.Pressed) -> None:
-        room_number = self.query_one('room_number', Input).value
-        session_id = self.query_one('session_id', Input).value
-        uri = self.query_one('uri', Input).value
+        room_number = self.query_one('#room_number', Input).value
+        session_id = self.query_one('#session_id', Input).value
+        uri = self.query_one('#uri', Input).value
 
         session = SessionModel(
-            id=session_id, room_number=int(room_number or '0'), uri=uri
+            id=session_id,
+            room_number=int(room_number or '0'),
+            uri=uri,
         )
 
         self.post_message(RoomInfo.Rejoin(session))

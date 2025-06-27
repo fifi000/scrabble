@@ -104,6 +104,7 @@ class ScrabbleApp(App[None]):
                 player_name=message.form_info.player_name,
             ).to_dict(),
         )
+        self.loading = False
 
     async def on_start_menu_screen_create_room(
         self, message: StartMenuScreen.CreateRoom
@@ -117,6 +118,7 @@ class ScrabbleApp(App[None]):
                 player_name=message.form_info.player_name,
             ).to_dict(),
         )
+        self.loading = False
 
     @work(exclusive=True)
     async def on_start_menu_screen_rejoin(
@@ -142,6 +144,7 @@ class ScrabbleApp(App[None]):
                 session_id=session.id,
             ).to_dict(),
         )
+        self.loading = False
 
     # --- GameScreen ---
 
@@ -255,8 +258,8 @@ class ScrabbleApp(App[None]):
 
     @work(exclusive=True)
     async def handle_error_message(self, data: ErrorData) -> None:
-        screen = ErrorScreen(data)
-        await self.push_screen_wait(screen)
+        self.screen.loading = False
+        await self.push_screen_wait(ErrorScreen(data.to_dict()))
 
     @work(exclusive=True)
     async def handle_connection_closed(self) -> None:

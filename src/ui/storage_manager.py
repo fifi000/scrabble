@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Collection, Iterable
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,7 @@ class SessionModel(DataModel):
     id: str
     room_number: int
     uri: str
+    datetime: str = datetime.now().isoformat()
 
 
 class StorageManager(ABC):
