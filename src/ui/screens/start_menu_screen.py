@@ -64,15 +64,15 @@ class StartMenuScreen(Screen):
         match event.button.id:
             case 'join':
                 self.loading = True
-                self.post_message(self.JoinRoom(form_info))
+                self.post_message(StartMenuScreen.JoinRoom(form_info))
 
             case 'create':
                 self.loading = True
-                self.post_message(self.CreateRoom(form_info))
+                self.post_message(StartMenuScreen.CreateRoom(form_info))
 
             case 'rejoin':
                 self.loading = True
-                self.post_message(self.Rejoin(form_info))
+                self.post_message(StartMenuScreen.Rejoin(form_info))
 
             case _:
                 raise Exception(f'Unsupported button id {event.button.id!r}')
