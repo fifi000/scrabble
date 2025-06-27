@@ -1,8 +1,11 @@
 import sys
+from collections.abc import Iterable
+from typing import override
 
 from textual import log, work
-from textual.app import App
+from textual.app import App, SystemCommand
 from textual.driver import Driver
+from textual.screen import Screen
 from textual.types import CSSPathType
 
 from core.protocol import client_data, server_data
@@ -11,6 +14,7 @@ from core.protocol.message_types import ClientMessageType, ServerMessageType
 from core.protocol.messages import MessageData
 from ui.game_client import GameClient
 from ui.models import BoardModel, PlayerModel
+from ui.screens.dialog_screen import DialogScreen
 from ui.screens.error_screen import ErrorScreen
 from ui.screens.game_screen import GameScreen
 from ui.screens.rejoin_rooms_screen import RejoinRoomsScreen
@@ -60,6 +64,26 @@ class ScrabbleApp(App[None]):
             from ui.storage_managers.linux_storage_manager import LinuxStorageManager
 
             return LinuxStorageManager
+
+    @work(exclusive=True)
+    async def _show_session_id(self) -> None:
+        await self.push_screen_wait(
+            DialogScreen.prompt(
+                'Your session ID',
+                input_init_kwargs={'value': self.game_client.session_id},
+            )
+        )
+
+    @override
+    def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
+        yield from super().get_system_commands(screen)
+
+        if isinstance(screen, GameScreen):
+            yield SystemCommand(
+                'Session ID',
+                'Shows session ID of current player',
+                self._show_session_id,
+            )
 
     def on_mount(self) -> None:
         self._game_client = GameClient(
@@ -231,6 +255,7 @@ class ScrabbleApp(App[None]):
 
     @work(exclusive=True)
     async def handle_rejoin_game(self, data: server_data.RejoinGameData) -> None:
+        self.game_client.session_id = data.session_id
         screen = GameScreen()
         screen.loading = True
         await self.switch_screen(screen)
@@ -298,7 +323,7 @@ class ScrabbleApp(App[None]):
                 assert message.data
                 data = server_data.RejoinGameData.from_dict(message.data)
                 print('Processing rejoin game')
-                self.handle_new_game(data)
+                self.handle_rejoin_game(data)
 
             case ServerMessageType.NEW_GAME:
                 assert message.data

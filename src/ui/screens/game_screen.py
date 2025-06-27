@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import override
 
 from textual import on
-from textual.app import ComposeResult
+from textual.app import ComposeResult, SystemCommand
 from textual.containers import VerticalScroll
 from textual.message import Message
 from textual.reactive import reactive, var

@@ -150,6 +150,10 @@ class _Prompt(Static):
             margin-top: 1;
             width: 1fr;                
         }
+
+        Button {
+            margin-top: 1;
+        }
     }
     """
 
@@ -174,9 +178,15 @@ class _Prompt(Static):
             input_ = Input(**self.input_init_kwargs)
             input_.focus()
             yield input_
+            yield Button('Submit', variant='primary', id='submit')
 
     @on(Input.Submitted)
     def handle_submit(self) -> None:
+        value = self.query_one(Input).value
+        self.screen.dismiss(value)
+
+    @on(Button.Pressed, '#submit')
+    def handle_button_submit(self) -> None:
         value = self.query_one(Input).value
         self.screen.dismiss(value)
 

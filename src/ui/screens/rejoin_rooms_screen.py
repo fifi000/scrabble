@@ -39,7 +39,9 @@ class RejoinRoomsScreen(ModalScreen[SessionModel | None]):
                 self.sessions = [SessionModel(id='', room_number=0, uri='')]
 
             for session in sorted(
-                self.sessions, key=lambda x: datetime.fromisoformat(x.datetime)
+                self.sessions,
+                key=lambda x: datetime.fromisoformat(x.datetime),
+                reverse=True,
             ):
                 yield RoomInfo(session)
 

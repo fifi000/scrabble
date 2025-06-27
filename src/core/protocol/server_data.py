@@ -33,6 +33,7 @@ class RejoinGameData(DataModel):
     current_player_id: str
     players: list[PlayerData]
     board: BoardData
+    session_id: str
 
 
 class NewGameData(DataModel):

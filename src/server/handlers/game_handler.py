@@ -207,5 +207,6 @@ class GameHandler:
                     current_player_id=room.game.current_player.id,
                     players=[PlayerData.from_player(p) for p in room.game.players],
                     board=BoardData.from_board(room.game.board),
+                    session_id=data.session_id,
                 ),
             )
