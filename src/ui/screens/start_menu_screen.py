@@ -4,7 +4,6 @@ import random
 from dataclasses import dataclass
 from typing import override
 
-from textual import on
 from textual.app import ComposeResult
 from textual.containers import Grid, HorizontalGroup
 from textual.message import Message
@@ -34,7 +33,7 @@ class StartMenuScreen(Screen):
 
     @override
     def compose(self) -> ComposeResult:
-        with Grid(id='form'):
+        with Grid(classes='inputs'):
             yield Label('Server URL')
             yield Input(
                 placeholder='ws://localhost:8765',
@@ -53,7 +52,7 @@ class StartMenuScreen(Screen):
             with HorizontalGroup(id='buttons'):
                 yield Button.success('Join', id='join')
                 yield Button.warning('Create', id='create')
-                yield Button('Rejoin', id='rejoin', variant='primary', disabled=True)
+                yield Button('Rejoin', id='rejoin', variant='primary')
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         form_info = FormInfo(

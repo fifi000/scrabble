@@ -1,11 +1,9 @@
 import sys
-from typing import assert_never
 
-from textual import log, on, work
+from textual import log, work
 from textual.app import App
 from textual.driver import Driver
 from textual.types import CSSPathType
-from textual.widgets import Button, Input
 
 from core.protocol import client_data, server_data
 from core.protocol.errors import ErrorData
@@ -18,7 +16,7 @@ from ui.screens.game_screen import GameScreen
 from ui.screens.rejoin_rooms_screen import RejoinRoomsScreen
 from ui.screens.room_screen import RoomScreen
 from ui.screens.start_menu_screen import StartMenuScreen
-from ui.storage_manager import StorageManager
+from ui.storage_manager import SessionModel, StorageManager
 
 
 class ScrabbleApp(App[None]):
@@ -41,7 +39,7 @@ class ScrabbleApp(App[None]):
         self._game_client: GameClient | None = None
 
         storage_manager_class = self._get_storage_manager_class()
-        self._storage_manager = storage_manager_class(self, 'feefee-scrabble')
+        self._storage_manager = storage_manager_class(self, 'feefee_scrabble')
 
     def _get_storage_manager_class(self) -> type[StorageManager]:
         if self.is_web:
@@ -64,7 +62,10 @@ class ScrabbleApp(App[None]):
             return LinuxStorageManager
 
     def on_mount(self) -> None:
-        self._game_client = GameClient(self.handle_server_message)
+        self._game_client = GameClient(
+            self.handle_server_message,
+            self.handle_connection_closed,
+        )
         self.push_screen(StartMenuScreen())
 
     @property
@@ -81,8 +82,13 @@ class ScrabbleApp(App[None]):
     # --- RoomScreen - events ---
 
     async def on_room_screen_start_game(self, message: RoomScreen.StartGame):
-        await self.game_client.send(type=ClientMessageType.START_GAME)
-    
+        await self.game_client.send(
+            type=ClientMessageType.START_GAME,
+            data=client_data.StartGameData(
+                room_number=message.room_number,
+                session_id=self.game_client.session_id,
+            ).to_dict(),
+        )
 
     # --- StartMenuScreen - events ---
 
@@ -111,24 +117,31 @@ class ScrabbleApp(App[None]):
                 player_name=message.form_info.player_name,
             ).to_dict(),
         )
-    
+
+    @work(exclusive=True)
     async def on_start_menu_screen_rejoin(
         self, message: StartMenuScreen.Rejoin
     ) -> None:
         sessions = self.storage_manager.read_sessions()
-        sessions = [info for info in sessions if info.url == message.form_info.server_url]
+        sessions = [
+            info for info in sessions if info.uri == message.form_info.server_url
+        ]
 
         screen = RejoinRoomsScreen()
         screen.update_sessions(sessions)
-        await self.push_screen_wait(screen)
+        session = await self.push_screen_wait(screen)
 
-    async def on_start_menu_screen_input_changed(
-        self, event: Input.Changed
-    ) -> None:
-        sessions = self.storage_manager.read_sessions()
+        if session is None:
+            return
 
-        sessions = [info for info in sessions if info.url == event.value]
-        self.screen.query_one('#rejoin', Button).disabled = not sessions
+        await self.game_client.connect(session.uri)
+        await self.game_client.send(
+            type=ClientMessageType.REJOIN,
+            data=client_data.RejoinData(
+                room_number=session.room_number,
+                session_id=session.id,
+            ).to_dict(),
+        )
 
     # --- GameScreen ---
 
@@ -161,12 +174,34 @@ class ScrabbleApp(App[None]):
 
     @work(exclusive=True)
     async def handle_new_room(self, data: server_data.NewRoomData) -> None:
+        self.storage_manager.add_session(
+            SessionModel(
+                id=data.session_id,
+                room_number=data.room_number,
+                uri=self.game_client.uri or '',
+            )
+        )
+
         self.game_client.session_id = data.session_id
         screen = RoomScreen(data.room_number, [data.player.name])
         await self.switch_screen(screen)
 
     @work(exclusive=True)
     async def handle_join_room(self, data: server_data.JoinRoomData) -> None:
+        self.storage_manager.add_session(
+            SessionModel(
+                id=data.session_id,
+                room_number=data.room_number,
+                uri=self.game_client.uri or '',
+            )
+        )
+
+        self.game_client.session_id = data.session_id
+        screen = RoomScreen(data.room_number, [info.name for info in data.player])
+        await self.switch_screen(screen)
+
+    @work(exclusive=True)
+    async def handle_rejoin_room(self, data: server_data.RejoinRoomData) -> None:
         self.game_client.session_id = data.session_id
         screen = RoomScreen(data.room_number, [info.name for info in data.player])
         await self.switch_screen(screen)
@@ -177,6 +212,22 @@ class ScrabbleApp(App[None]):
 
     @work(exclusive=True)
     async def handle_new_game(self, data: server_data.NewGameData) -> None:
+        screen = GameScreen()
+        screen.loading = True
+        await self.switch_screen(screen)
+
+        assert isinstance(self.screen, GameScreen)
+
+        self.screen.update_player(PlayerModel.from_player_data(data.player))
+        self.screen.update_players(
+            [PlayerModel.from_player_data(player) for player in data.players]
+        )
+        self.screen.update_board(BoardModel.form_board_data(data.board))
+        self.screen.update_current_player(data.current_player_id)
+        screen.loading = False
+
+    @work(exclusive=True)
+    async def handle_rejoin_game(self, data: server_data.RejoinGameData) -> None:
         screen = GameScreen()
         screen.loading = True
         await self.switch_screen(screen)
@@ -208,6 +259,10 @@ class ScrabbleApp(App[None]):
         await self.push_screen_wait(screen)
 
     @work(exclusive=True)
+    async def handle_connection_closed(self) -> None:
+        self.push_screen(StartMenuScreen())
+
+    @work(exclusive=True)
     async def handle_server_message(self, message: MessageData) -> None:
         print(f'Received server message: {message.type}')
 
@@ -231,23 +286,16 @@ class ScrabbleApp(App[None]):
                 self.handle_join_room(data)
 
             case ServerMessageType.REJOIN_ROOM:
-                # assert message.data
-                # data = server_data.JoinRoomData.from_dict(message.data)
-                # print(f'Processing join room: {data.room_number}')
-                # self.handle_join_room(data)
+                assert message.data
+                data = server_data.RejoinRoomData.from_dict(message.data)
+                print(f'Processing rejoin room: {data.room_number}')
+                self.handle_rejoin_room(data)
 
             case ServerMessageType.REJOIN_GAME:
-                # assert message.data
-                # data = server_data.NewGameData.from_dict(message.data)
-                # print('Processing new game start')
-                # self.handle_new_game(data)
-
-            case ServerMessageType.PLAYER_REJOIN:
-                # assert message.data
-                # data = server_data.NewGameData.from_dict(message.data)
-                # print('Processing new game start')
-                # self.handle_new_game(data)
-        
+                assert message.data
+                data = server_data.RejoinGameData.from_dict(message.data)
+                print('Processing rejoin game')
+                self.handle_new_game(data)
 
             case ServerMessageType.NEW_GAME:
                 assert message.data

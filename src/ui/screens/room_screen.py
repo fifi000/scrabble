@@ -1,10 +1,12 @@
 from __future__ import annotations
+
+from dataclasses import dataclass
 from typing import override
 
-from textual.reactive import reactive
 from textual.app import ComposeResult
-from textual.screen import Screen
 from textual.message import Message
+from textual.reactive import reactive
+from textual.screen import Screen
 from textual.widgets import (
     Button,
     Label,
@@ -14,8 +16,9 @@ from textual.widgets import (
 
 
 class RoomScreen(Screen):
+    @dataclass
     class StartGame(Message):
-        pass
+        room_number: int
 
     player_names: reactive[list[str]] = reactive(list, recompose=True)
 
@@ -44,7 +47,7 @@ class RoomScreen(Screen):
         match event.button.id:
             case 'start_game':
                 self.loading = True
-                self.post_message(self.StartGame())
+                self.post_message(RoomScreen.StartGame(self.room_number))
 
             case _:
                 raise Exception(f'Unsupported button id {event.button.id!r}')

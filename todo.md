@@ -3,11 +3,10 @@
 - [ ] notifications after server messages
 - [ ] rejoin game
   - [x] some server base stuff
-  - [ ] rejoin room vs rejoin game
+  - [x] rejoin room vs rejoin game
   - [ ] broadcast about user disconnected
-  - [ ] send current room / game state data
+  - [x] send current room / game state data
 - [ ] room / game admin
-- [ ] add some kind of auth
 - [ ] placed word disapproval - one opponent can contest placed word, player can agree to remove the word
   - [ ] color newly placed tiles
 - [ ] game configuration option in rooms
@@ -33,6 +32,7 @@
 - [x] fix move action buttons container height proportions
 - [x] implement buttons logic
 - [x] make placed tiles tell apart
+- [x] add some kind of auth
 
 ## future ideas
 

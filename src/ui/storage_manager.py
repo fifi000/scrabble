@@ -1,19 +1,19 @@
 from abc import ABC, abstractmethod
 from collections.abc import Collection, Iterable
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from textual.app import App
 
+from core.data_model import DataModel
+
 ConfigModel = dict[str, Any]
 
 
-@dataclass
-class SessionModel:
-    session_id: str
+class SessionModel(DataModel):
+    id: str
     room_number: int
-    url: str
+    uri: str
 
 
 class StorageManager(ABC):

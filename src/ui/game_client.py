@@ -27,6 +27,7 @@ class GameClient:
         self.on_server_message = on_server_message
         self.on_connection_closed = on_connection_closed
         self._websocket: ClientConnection | None = None
+        self._uri: str | None = None
         self._session_id: str | None = None
 
     @property
@@ -40,34 +41,36 @@ class GameClient:
     def session_id(self, value: str) -> None:
         self._session_id = value
 
-    def _get_websocket(self) -> ClientConnection:
-        if not self._websocket:
+    @property
+    def websocket(self) -> ClientConnection:
+        if self._websocket is None:
             raise RuntimeError(
                 f'{GameClient.__name__!r} is not connected. You must call {GameClient.connect.__name__!r} first.'
             )
 
         return self._websocket
 
+    @property
+    def uri(self) -> str | None:
+        return self._uri
+
     async def connect(self, uri: str) -> None:
         self._websocket = await websockets.connect(uri)
+        self._uri = uri
 
         asyncio.create_task(self._listen())
 
     async def send(self, type: str, data: dict[str, Any] | None = None) -> None:
-        websocket = self._get_websocket()
-
         message = MessageData(
             type=type,
             data=data,
         )
 
-        await websocket.send(message.to_json())
+        await self.websocket.send(message.to_json())
 
     async def _listen(self) -> None:
-        websocket = self._get_websocket()
-
         try:
-            async for ws_message in websocket:
+            async for ws_message in self.websocket:
                 message = MessageData.from_dict(json.loads(ws_message))
 
                 if iscoroutinefunction(self.on_server_message):
@@ -75,10 +78,10 @@ class GameClient:
                 else:
                     self.on_server_message(message)
         except websockets.exceptions.ConnectionClosedError:
-            if self.on_connection_closed is not None:
-                if iscoroutinefunction(self.on_connection_closed):
-                    await self.on_connection_closed()
-                else:
-                    self.on_connection_closed()
-            else:
+            if self.on_connection_closed is None:
                 raise
+
+            if iscoroutinefunction(self.on_connection_closed):
+                await self.on_connection_closed()
+            else:
+                self.on_connection_closed()
