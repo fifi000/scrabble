@@ -195,7 +195,12 @@ class ScrabbleApp(App[None]):
         )
 
     async def on_game_screen_skip_turn(self, message: GameScreen.SkipTurn) -> None:
-        await self.game_client.send(type=ClientMessageType.SKIP_TURN, data=None)
+        await self.game_client.send(
+            type=ClientMessageType.SKIP_TURN,
+            data=client_data.SkipTurnData(
+                session_id=self.game_client.session_id
+            ).to_dict(),
+        )
 
     # --- handlers ---
 

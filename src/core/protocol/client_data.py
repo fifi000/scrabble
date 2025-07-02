@@ -25,15 +25,17 @@ class StartGameData(DataModel):
 # --- game moves ---
 
 
-class PlaceTilesData(DataModel):
+class GameMove(DataModel):
+    session_id: str
+
+
+class PlaceTilesData(GameMove):
     tiles_data: list[TileData]
-    session_id: str
 
 
-class ExchangeTilesData(DataModel):
+class ExchangeTilesData(GameMove):
     tiles_data: list[TileData]
-    session_id: str
 
 
-class SkipTurnData(DataModel):
-    session_id: str
+class SkipTurnData(GameMove):
+    pass
