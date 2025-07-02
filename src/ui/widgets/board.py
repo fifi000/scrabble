@@ -9,7 +9,7 @@ from textual.geometry import Size
 from textual.message import Message
 from textual.reactive import reactive
 
-from ui.models import BoardModel
+from ui.models.board_model import BoardModel
 from ui.widgets.field import Field
 
 

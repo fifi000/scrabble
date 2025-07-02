@@ -1,26 +1,25 @@
 import sys
 from collections.abc import Iterable
-from typing import override
+from typing import assert_never, override
 
-from textual import log, work
+from textual import log, on, work
 from textual.app import App, SystemCommand
 from textual.driver import Driver
 from textual.screen import Screen
 from textual.types import CSSPathType
 
 from core.protocol import client_data, server_data
-from core.protocol.errors import ErrorData
+from core.protocol.error_data import ErrorData
+from core.protocol.message_data import MessageData
 from core.protocol.message_types import ClientMessageType, ServerMessageType
-from core.protocol.messages import MessageData
 from ui.game_client import GameClient
-from ui.models import BoardModel, PlayerModel
+from ui.handlers.server_message_handler import ServerMessageHandler
 from ui.screens.dialog_screen import DialogScreen
-from ui.screens.error_screen import ErrorScreen
 from ui.screens.game_screen import GameScreen
 from ui.screens.rejoin_rooms_screen import RejoinRoomsScreen
 from ui.screens.room_screen import RoomScreen
 from ui.screens.start_menu_screen import StartMenuScreen
-from ui.storage_manager import SessionModel, StorageManager
+from ui.storage_manager import StorageManager
 
 
 class ScrabbleApp(App[None]):
@@ -45,6 +44,8 @@ class ScrabbleApp(App[None]):
         storage_manager_class = self._get_storage_manager_class()
         self._storage_manager = storage_manager_class(self, 'feefee_scrabble')
 
+        self.server_message_handler = ServerMessageHandler(self)
+
     def _get_storage_manager_class(self) -> type[StorageManager]:
         if self.is_web:
             from ui.storage_managers.web_storage_manager import WebStorageManager
@@ -64,6 +65,17 @@ class ScrabbleApp(App[None]):
             from ui.storage_managers.linux_storage_manager import LinuxStorageManager
 
             return LinuxStorageManager
+
+    @property
+    def game_client(self) -> GameClient:
+        if self._game_client is None:
+            raise RuntimeError('Game client is not initialized.')
+
+        return self._game_client
+
+    @property
+    def storage_manager(self) -> StorageManager:
+        return self._storage_manager
 
     @work(exclusive=True)
     async def _show_session_id(self) -> None:
@@ -92,20 +104,10 @@ class ScrabbleApp(App[None]):
         )
         self.push_screen(StartMenuScreen())
 
-    @property
-    def game_client(self) -> GameClient:
-        if self._game_client is None:
-            raise RuntimeError('Game client is not initialized.')
-
-        return self._game_client
-
-    @property
-    def storage_manager(self) -> StorageManager:
-        return self._storage_manager
-
     # --- RoomScreen - events ---
 
-    async def on_room_screen_start_game(self, message: RoomScreen.StartGame):
+    @on(RoomScreen.StartGame)
+    async def handle_start_game(self, message: RoomScreen.StartGame):
         await self.game_client.send(
             type=ClientMessageType.START_GAME,
             data=client_data.StartGameData(
@@ -116,9 +118,8 @@ class ScrabbleApp(App[None]):
 
     # --- StartMenuScreen - events ---
 
-    async def on_start_menu_screen_join_room(
-        self, message: StartMenuScreen.JoinRoom
-    ) -> None:
+    @on(StartMenuScreen.JoinRoom)
+    async def handle_join_room(self, message: StartMenuScreen.JoinRoom) -> None:
         await self.game_client.connect(message.form_info.server_url)
 
         await self.game_client.send(
@@ -130,9 +131,8 @@ class ScrabbleApp(App[None]):
         )
         self.loading = False
 
-    async def on_start_menu_screen_create_room(
-        self, message: StartMenuScreen.CreateRoom
-    ) -> None:
+    @on(StartMenuScreen.CreateRoom)
+    async def handle_create_room(self, message: StartMenuScreen.CreateRoom) -> None:
         await self.game_client.connect(message.form_info.server_url)
 
         await self.game_client.send(
@@ -145,9 +145,8 @@ class ScrabbleApp(App[None]):
         self.loading = False
 
     @work(exclusive=True)
-    async def on_start_menu_screen_rejoin(
-        self, message: StartMenuScreen.Rejoin
-    ) -> None:
+    @on(StartMenuScreen.Rejoin)
+    async def handle_rejoin(self, message: StartMenuScreen.Rejoin) -> None:
         sessions = self.storage_manager.read_sessions()
         sessions = [
             info for info in sessions if info.uri == message.form_info.server_url
@@ -170,11 +169,10 @@ class ScrabbleApp(App[None]):
         )
         self.loading = False
 
-    # --- GameScreen ---
+    # --- GameScreen - events ---
 
-    async def on_game_screen_submit_tiles(
-        self, message: GameScreen.SubmitTiles
-    ) -> None:
+    @on(GameScreen.SubmitTiles)
+    async def handle_submit_tiles(self, message: GameScreen.SubmitTiles) -> None:
         tiles_data = [model.to_tile_data() for model in message.tile_models]
         await self.game_client.send(
             type=ClientMessageType.PLACE_TILES,
@@ -183,9 +181,8 @@ class ScrabbleApp(App[None]):
             ).to_dict(),
         )
 
-    async def on_game_screen_exchange_tiles(
-        self, message: GameScreen.ExchangeTiles
-    ) -> None:
+    @on(GameScreen.ExchangeTiles)
+    async def handle_exchange_tiles(self, message: GameScreen.ExchangeTiles) -> None:
         tiles_data = [model.to_tile_data() for model in message.tile_models]
         await self.game_client.send(
             type=ClientMessageType.EXCHANGE_TILES,
@@ -194,7 +191,8 @@ class ScrabbleApp(App[None]):
             ).to_dict(),
         )
 
-    async def on_game_screen_skip_turn(self, message: GameScreen.SkipTurn) -> None:
+    @on(GameScreen.SkipTurn)
+    async def handle_skip_turn(self) -> None:
         await self.game_client.send(
             type=ClientMessageType.SKIP_TURN,
             data=client_data.SkipTurnData(
@@ -205,93 +203,6 @@ class ScrabbleApp(App[None]):
     # --- handlers ---
 
     @work(exclusive=True)
-    async def handle_new_room(self, data: server_data.NewRoomData) -> None:
-        self.storage_manager.add_session(
-            SessionModel(
-                id=data.session_id,
-                room_number=data.room_number,
-                uri=self.game_client.uri or '',
-            )
-        )
-
-        self.game_client.session_id = data.session_id
-        screen = RoomScreen(data.room_number, [data.player.name])
-        await self.switch_screen(screen)
-
-    @work(exclusive=True)
-    async def handle_join_room(self, data: server_data.JoinRoomData) -> None:
-        self.storage_manager.add_session(
-            SessionModel(
-                id=data.session_id,
-                room_number=data.room_number,
-                uri=self.game_client.uri or '',
-            )
-        )
-
-        self.game_client.session_id = data.session_id
-        screen = RoomScreen(data.room_number, [info.name for info in data.player])
-        await self.switch_screen(screen)
-
-    @work(exclusive=True)
-    async def handle_rejoin_room(self, data: server_data.RejoinRoomData) -> None:
-        self.game_client.session_id = data.session_id
-        screen = RoomScreen(data.room_number, [info.name for info in data.player])
-        await self.switch_screen(screen)
-
-    def handle_new_player(self, data: server_data.NewPlayerData) -> None:
-        assert isinstance(self.screen, RoomScreen)
-        self.screen.add_player(data.player.name)
-
-    @work(exclusive=True)
-    async def handle_new_game(self, data: server_data.NewGameData) -> None:
-        screen = GameScreen()
-        screen.loading = True
-        await self.switch_screen(screen)
-
-        assert isinstance(self.screen, GameScreen)
-
-        self.screen.update_player(PlayerModel.from_player_data(data.player))
-        self.screen.update_players(
-            [PlayerModel.from_player_data(player) for player in data.players]
-        )
-        self.screen.update_board(BoardModel.form_board_data(data.board))
-        self.screen.update_current_player(data.current_player_id)
-        screen.loading = False
-
-    @work(exclusive=True)
-    async def handle_rejoin_game(self, data: server_data.RejoinGameData) -> None:
-        self.game_client.session_id = data.session_id
-        screen = GameScreen()
-        screen.loading = True
-        await self.switch_screen(screen)
-
-        assert isinstance(self.screen, GameScreen)
-
-        self.screen.update_player(PlayerModel.from_player_data(data.player))
-        self.screen.update_players(
-            [PlayerModel.from_player_data(player) for player in data.players]
-        )
-        self.screen.update_board(BoardModel.form_board_data(data.board))
-        self.screen.update_current_player(data.current_player_id)
-        screen.loading = False
-
-    @work(exclusive=True)
-    async def handle_next_turn(self, data: server_data.NextTurnData) -> None:
-        assert isinstance(self.screen, GameScreen)
-
-        self.screen.update_player(PlayerModel.from_player_data(data.player))
-        self.screen.update_players(
-            [PlayerModel.from_player_data(player) for player in data.players]
-        )
-        self.screen.update_board(BoardModel.form_board_data(data.board))
-        self.screen.update_current_player(data.current_player_id)
-
-    @work(exclusive=True)
-    async def handle_error_message(self, data: ErrorData) -> None:
-        self.screen.loading = False
-        await self.push_screen_wait(ErrorScreen(data.to_dict()))
-
-    @work(exclusive=True)
     async def handle_connection_closed(self) -> None:
         self.push_screen(StartMenuScreen())
 
@@ -299,59 +210,65 @@ class ScrabbleApp(App[None]):
     async def handle_server_message(self, message: MessageData) -> None:
         print(f'Received server message: {message.type}')
 
+        if not isinstance(message.type, ServerMessageType):
+            log.error(f'Unsupported message type: {message.type}')
+            self.server_message_handler.handle_error_message(message)
+            raise RuntimeError(f'Unsupported message type: {message.type!r}')
+
         match message.type:
             case ServerMessageType.NEW_ROOM_CREATED:
                 assert message.data
                 data = server_data.NewRoomData.from_dict(message.data)
                 print(f'Processing new room: {data.room_number}')
-                self.handle_new_room(data)
+                self.server_message_handler.handle_new_room(data)
 
             case ServerMessageType.NEW_PLAYER:
                 assert message.data
-                data = server_data.NewPlayerData.from_dict(message.data)
+                data = server_data.PlayerJoinedData.from_dict(message.data)
                 print(f'Processing new player: {data.player.name}')
-                self.handle_new_player(data)
+                self.server_message_handler.handle_new_player(data)
 
             case ServerMessageType.JOIN_ROOM:
                 assert message.data
                 data = server_data.JoinRoomData.from_dict(message.data)
                 print(f'Processing join room: {data.room_number}')
-                self.handle_join_room(data)
+                self.server_message_handler.handle_join_room(data)
 
             case ServerMessageType.REJOIN_ROOM:
                 assert message.data
                 data = server_data.RejoinRoomData.from_dict(message.data)
                 print(f'Processing rejoin room: {data.room_number}')
-                self.handle_rejoin_room(data)
+                self.server_message_handler.handle_rejoin_room(data)
 
             case ServerMessageType.REJOIN_GAME:
                 assert message.data
                 data = server_data.RejoinGameData.from_dict(message.data)
                 print('Processing rejoin game')
-                self.handle_rejoin_game(data)
+                self.server_message_handler.handle_rejoin_game(data)
 
             case ServerMessageType.NEW_GAME:
                 assert message.data
                 data = server_data.NewGameData.from_dict(message.data)
                 print('Processing new game start')
-                self.handle_new_game(data)
+                self.server_message_handler.handle_new_game(data)
 
             case ServerMessageType.NEXT_TURN:
                 assert message.data
                 data = server_data.NextTurnData.from_dict(message.data)
                 print(f'Processing next turn, player: {data.current_player_id}')
-                self.handle_next_turn(data)
+                self.server_message_handler.handle_next_turn(data)
 
             case ServerMessageType.ERROR:
                 assert message.data
                 data = ErrorData.from_dict(message.data)
                 log.error(f'Error from server: {data.message}')
-                self.handle_error_message(data)
+                self.server_message_handler.handle_error_message(data)
+
+            case ServerMessageType.PLAYER_REJOIN:
+                pass
 
             case _:
-                log.error(f'Unsupported message type: {message.type}')
-                self.handle_error_message(message)
-                raise RuntimeError(f'Unsupported message type: {message.type!r}')
+                assert_never(message.type)
 
 
 if __name__ == '__main__':

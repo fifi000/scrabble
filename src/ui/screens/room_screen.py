@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import override
 
+from textual import on
 from textual.app import ComposeResult
 from textual.message import Message
 from textual.reactive import reactive
@@ -43,11 +44,7 @@ class RoomScreen(Screen):
 
         yield Button.success('Start Game', id='start_game')
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        match event.button.id:
-            case 'start_game':
-                self.loading = True
-                self.post_message(RoomScreen.StartGame(self.room_number))
-
-            case _:
-                raise Exception(f'Unsupported button id {event.button.id!r}')
+    @on(Button.Pressed, '#start_game')
+    def handle_start_game(self) -> None:
+        self.loading = True
+        self.post_message(RoomScreen.StartGame(self.room_number))

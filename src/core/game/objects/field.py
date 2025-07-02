@@ -1,6 +1,6 @@
 from core.game.enums import FieldType
 from core.game.objects.tile import Tile
-from core.game.types import Position
+from core.game.types.position import Position
 
 
 class Field:

@@ -11,8 +11,10 @@ from textual.reactive import reactive, var
 from textual.screen import Screen
 from textual.widgets import Button, Header
 
-from ui.models import BoardModel, PlayerModel, TileModel
+from ui.models.board_model import BoardModel
+from ui.models.player_model import PlayerModel
 from ui.screens.dialog_screen import DialogScreen
+from ui.models.tile_model import TileModel
 from ui.widgets.board import Board
 from ui.widgets.field import Field
 from ui.widgets.move_buttons import MoveButtons

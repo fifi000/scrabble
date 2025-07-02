@@ -1,41 +1,21 @@
-from core.data_model import DataModel
-from core.protocol.data_types import TileData
+from core.protocol._client.room_data import (
+    CreateRoomData,
+    JoinRoomData,
+    RejoinData,
+    StartGameData,
+)
+from core.protocol._client.player_moves_data import (
+    PlaceTilesData,
+    ExchangeTilesData,
+    SkipTurnData,
+)
 
-
-class CreateRoomData(DataModel):
-    room_number: int
-    player_name: str
-
-
-class JoinRoomData(DataModel):
-    room_number: int
-    player_name: str
-
-
-class RejoinData(DataModel):
-    room_number: int
-    session_id: str
-
-
-class StartGameData(DataModel):
-    room_number: int
-    session_id: str
-
-
-# --- game moves ---
-
-
-class GameMove(DataModel):
-    session_id: str
-
-
-class PlaceTilesData(GameMove):
-    tiles_data: list[TileData]
-
-
-class ExchangeTilesData(GameMove):
-    tiles_data: list[TileData]
-
-
-class SkipTurnData(GameMove):
-    pass
+__all__ = [
+    'CreateRoomData',
+    'JoinRoomData',
+    'RejoinData',
+    'StartGameData',
+    'PlaceTilesData',
+    'ExchangeTilesData',
+    'SkipTurnData',
+]

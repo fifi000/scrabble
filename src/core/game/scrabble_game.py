@@ -23,7 +23,7 @@ from core.game.objects.field import Field
 from core.game.objects.player import Player
 from core.game.objects.tile import Tile
 from core.game.objects.tile_bag import TileBag
-from core.game.types import Position
+from core.game.types.position import Position
 
 
 def _convert_grid(grid: list[list[int]]) -> list[list[FieldType]]:

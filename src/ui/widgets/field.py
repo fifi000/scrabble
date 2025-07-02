@@ -6,8 +6,8 @@ from textual.reactive import reactive
 from textual.widgets import Static
 
 from core.game.enums import FieldType
-from core.game.types import Position
-from ui.models import FieldModel
+from core.game.types.position import Position
+from ui.models.field_model import FieldModel
 from ui.widgets.tile import Tile
 
 

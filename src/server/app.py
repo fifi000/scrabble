@@ -13,7 +13,7 @@ from core.protocol.error_codes import ErrorCode
 from core.protocol.message_types import (
     ClientMessageType,
 )
-from core.protocol.messages import MessageData
+from core.protocol.message_data import MessageData
 from server.communication import send_error
 from server.handlers.game_handler import GameHandler
 from server.handlers.room_handler import RoomHandler

@@ -1,50 +1,25 @@
-from core.data_model import DataModel
-from core.protocol.data_types import BoardData, PlayerData
+from core.protocol._server.game_data import (
+    NewGameData,
+    NextTurnData,
+    RejoinGameData,
+)
+from core.protocol._server.room_data import (
+    BaseRoomData,
+    JoinRoomData,
+    NewRoomData,
+    PlayerJoinedData,
+    PlayerRejoinedData,
+    RejoinRoomData,
+)
 
-
-class NewRoomData(DataModel):
-    room_number: int
-    player: PlayerData
-    session_id: str
-
-
-class JoinRoomData(DataModel):
-    room_number: int
-    player: list[PlayerData]
-    session_id: str
-
-
-class RejoinRoomData(DataModel):
-    room_number: int
-    player: list[PlayerData]
-    session_id: str
-
-
-class NewPlayerData(DataModel):
-    player: PlayerData
-
-
-class PlayerRejoinData(DataModel):
-    player: PlayerData
-
-
-class RejoinGameData(DataModel):
-    player: PlayerData
-    current_player_id: str
-    players: list[PlayerData]
-    board: BoardData
-    session_id: str
-
-
-class NewGameData(DataModel):
-    player: PlayerData
-    current_player_id: str
-    players: list[PlayerData]
-    board: BoardData
-
-
-class NextTurnData(DataModel):
-    player: PlayerData
-    current_player_id: str
-    players: list[PlayerData]
-    board: BoardData
+__all__ = [
+    'BaseRoomData',
+    'NewRoomData',
+    'JoinRoomData',
+    'RejoinRoomData',
+    'PlayerJoinedData',
+    'PlayerRejoinedData',
+    'RejoinGameData',
+    'NewGameData',
+    'NextTurnData',
+]

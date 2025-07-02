@@ -15,6 +15,7 @@ class SessionModel(DataModel):
     id: str
     room_number: int
     uri: str
+    player_name: str
     datetime: str = datetime.now().isoformat()
 
 

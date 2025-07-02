@@ -18,7 +18,7 @@ from core.exceptions.game import (
     PlayerNotFoundError,
 )
 from core.protocol.error_codes import ErrorCode
-from core.protocol.errors import ErrorData
+from core.protocol.error_data import ErrorData
 from server.communication import send_error
 from server.exceptions import (
     DuplicatedConnectionError,

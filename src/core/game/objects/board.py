@@ -4,7 +4,8 @@ from typing import Literal, overload
 from core.game.enums import FieldType
 from core.game.objects.field import Field
 from core.game.objects.tile import Tile
-from core.game.types import Grid, Position
+from core.game.types.position import Position
+from core.game.types.square_grid import SquareGrid
 
 
 class Board:
@@ -15,7 +16,7 @@ class Board:
             for j, cell in enumerate(row)
         ]
 
-        self._grid = Grid.from_flat(fields)
+        self._grid = SquareGrid.from_flat(fields)
 
     @property
     def rows(self) -> int:

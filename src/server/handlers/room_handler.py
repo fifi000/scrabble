@@ -5,7 +5,7 @@ from websockets import ServerConnection
 
 from core.game.objects.player import Player
 from core.protocol import client_data, server_data
-from core.protocol.data_types import PlayerData
+from core.protocol.data_types.player_data import PlayerData
 from core.protocol.message_types import ServerMessageType
 from server.communication import broadcast_to_players, send_to_player
 from server.exception_handler import handle_exception
@@ -80,7 +80,8 @@ class RoomHandler:
             ServerMessageType.JOIN_ROOM,
             server_data.JoinRoomData(
                 room_number=user.room.number,
-                player=[
+                player=PlayerData.from_player(user.player),
+                players=[
                     PlayerData.from_player(user.player)
                     for user in user.room.get_users()
                 ],
@@ -91,7 +92,7 @@ class RoomHandler:
         await broadcast_to_players(
             user.room,
             ServerMessageType.NEW_PLAYER,
-            server_data.NewPlayerData(
+            server_data.PlayerJoinedData(
                 player=PlayerData.from_player(user.player),
             ),
             players_to_skip=[user.player],
@@ -113,7 +114,7 @@ class RoomHandler:
                 ServerMessageType.REJOIN_ROOM,
                 server_data.RejoinRoomData(
                     room_number=user.room.number,
-                    player=[
+                    players=[
                         PlayerData.from_player(user.player)
                         for user in user.room.get_users()
                     ],
@@ -124,7 +125,7 @@ class RoomHandler:
             await broadcast_to_players(
                 user.room,
                 ServerMessageType.PLAYER_REJOIN,
-                server_data.PlayerRejoinData(
+                server_data.PlayerRejoinedData(
                     player=PlayerData.from_player(user.player),
                 ),
                 players_to_skip=[user.player],

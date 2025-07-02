@@ -2,6 +2,8 @@ from enum import StrEnum
 
 
 class ClientMessageType(StrEnum):
+    """Enumeration of message types sent from the client to the server."""
+
     # server actions
     JOIN_ROOM = 'join_room'
     START_GAME = 'start_game'
@@ -14,6 +16,8 @@ class ClientMessageType(StrEnum):
 
 
 class ServerMessageType(StrEnum):
+    """Enumeration of message types sent from the server to the client."""
+
     ERROR = 'error'
     NEW_ROOM_CREATED = 'new_room_created'
     NEW_PLAYER = 'new_player'
@@ -23,4 +27,3 @@ class ServerMessageType(StrEnum):
     NEW_GAME = 'new_game'
     REJOIN_GAME = 'rejoin_game'
     NEXT_TURN = 'next_turn'
-    NEW_TILES = 'new_tiles'

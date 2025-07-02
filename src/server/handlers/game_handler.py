@@ -2,9 +2,10 @@ import logging
 
 from websockets import ServerConnection
 
-from core.game.scrabble_game import GameConfig, ScrabbleGame
 from core.protocol import client_data, server_data
-from core.protocol.data_types import BoardData, PlayerData
+from core.game.scrabble_game import GameConfig, ScrabbleGame
+from core.protocol.data_types.board_data import BoardData
+from core.protocol.data_types.player_data import PlayerData
 from core.protocol.message_types import ServerMessageType
 from server.communication import send_to_player
 from server.exception_handler import handle_exception

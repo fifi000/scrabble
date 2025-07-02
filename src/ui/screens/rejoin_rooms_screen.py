@@ -36,7 +36,9 @@ class RejoinRoomsScreen(ModalScreen[SessionModel | None]):
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='container'):
             if not self.sessions:
-                self.sessions = [SessionModel(id='', room_number=0, uri='')]
+                self.sessions = [
+                    SessionModel(id='', room_number=0, uri='', player_name='')
+                ]
 
             for session in sorted(
                 self.sessions,

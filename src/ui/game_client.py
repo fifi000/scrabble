@@ -7,7 +7,7 @@ from typing import Any, Protocol
 import websockets
 from websockets.asyncio.client import ClientConnection
 
-from core.protocol.messages import MessageData
+from core.protocol.message_data import MessageData
 
 
 class MessageHandler(Protocol):
@@ -61,10 +61,7 @@ class GameClient:
         asyncio.create_task(self._listen())
 
     async def send(self, type: str, data: dict[str, Any] | None = None) -> None:
-        message = MessageData(
-            type=type,
-            data=data,
-        )
+        message = MessageData(type=type, data=data)
 
         await self.websocket.send(message.to_json())
 

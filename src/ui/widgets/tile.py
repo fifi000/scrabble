@@ -1,6 +1,6 @@
 from typing import override
 
-from ui.models import TileModel
+from ui.models.tile_model import TileModel
 from ui.widgets.draggable import Draggable
 
 

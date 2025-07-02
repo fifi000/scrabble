@@ -1,12 +1,12 @@
 from collections.abc import Iterator
 from typing import override
 
-from textual import events
+from textual import events, on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.reactive import reactive
 
-from ui.models import TileModel
+from ui.models.tile_model import TileModel
 from ui.widgets.draggable import Draggable
 from ui.widgets.tile import Tile
 
@@ -46,7 +46,8 @@ class TileRack(Horizontal):
                     else:
                         tile.selected = False
 
-    def on_draggable_drag_ended(self, message: Draggable.DragEnded) -> None:
+    @on(Draggable.DragEnded)
+    def handle_drag_ended(self) -> None:
         # reorder tiles
         self.tiles.sort(key=lambda x: x.region.x)
         self.mutate_reactive(TileRack.tiles)

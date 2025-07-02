@@ -9,7 +9,7 @@ from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import DataTable
 
-from ui.models import PlayerModel
+from ui.models.player_model import PlayerModel
 
 
 class ScoreBoard(VerticalScroll):

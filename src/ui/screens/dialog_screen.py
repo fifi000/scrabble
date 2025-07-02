@@ -24,10 +24,6 @@ class DialogScreen[ScreenResultType](ModalScreen[ScreenResultType]):
             height: auto;
             max-width: 60;
         }
-
-        #container.full-screen {
-            # max-width: auto;
-        }
     }
     """
 

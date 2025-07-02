@@ -3,9 +3,6 @@ from typing import TYPE_CHECKING, Any, overload
 
 if TYPE_CHECKING:
     from _typeshed import SupportsRichComparison, SupportsRichComparisonT
-else:
-    from typing import Any as SupportsRichComparison
-    from typing import Any as SupportsRichComparisonT
 
 
 def distinct_by[T, U: Hashable](

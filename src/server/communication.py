@@ -5,9 +5,9 @@ from websockets import ServerConnection
 
 from core.data_model import DataModel
 from core.game.objects.player import Player
-from core.protocol.errors import ErrorData
+from core.protocol.error_data import ErrorData
 from core.protocol.message_types import ServerMessageType
-from core.protocol.messages import MessageData
+from core.protocol.message_data import MessageData
 from server.room_manager import Room
 
 logger = logging.getLogger(__name__)
