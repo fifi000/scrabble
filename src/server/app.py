@@ -105,8 +105,8 @@ class GameServer:
 
         self.logger = logging.getLogger('server.GameServer')
         self.room_manager = RoomManager()
-        self.room_handler = RoomHandler(self.room_manager)
         self.game_handler = GameHandler(self.room_manager)
+        self.room_handler = RoomHandler(self.room_manager, self.game_handler)
 
         self.logger.info(
             f'Game server initialized - Host: {self.config.host}, Port: {self.config.port}'
@@ -161,7 +161,9 @@ class GameServer:
                 await self.room_handler.handle_join_room(websocket, data)
 
             case ClientMessageType.START_GAME:
-                await self.game_handler.handle_start_game(websocket)
+                assert message.data
+                data = client_data.StartGameData.from_dict(message.data)
+                await self.game_handler.handle_start_game(websocket, data)
 
             case ClientMessageType.PLACE_TILES:
                 assert message.data
@@ -174,7 +176,14 @@ class GameServer:
                 await self.game_handler.handle_exchange_tiles(websocket, data)
 
             case ClientMessageType.SKIP_TURN:
-                await self.game_handler.handle_skip_turn(websocket)
+                assert message.data
+                data = client_data.SkipTurnData.from_dict(message.data)
+                await self.game_handler.handle_skip_turn(websocket, data)
+
+            case ClientMessageType.REJOIN:
+                assert message.data
+                data = client_data.RejoinData.from_dict(message.data)
+                await self.room_handler.handle_rejoin_room(websocket, data)
 
             case _:
                 await send_error(

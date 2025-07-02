@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import override
 
 from textual.app import ComposeResult
-from textual.containers import Grid
+from textual.containers import Grid, HorizontalGroup
 from textual.message import Message
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label
@@ -27,9 +27,13 @@ class StartMenuScreen(Screen):
     class CreateRoom(Message):
         form_info: FormInfo
 
+    @dataclass
+    class Rejoin(Message):
+        form_info: FormInfo
+
     @override
     def compose(self) -> ComposeResult:
-        with Grid():
+        with Grid(classes='inputs'):
             yield Label('Server URL')
             yield Input(
                 placeholder='ws://localhost:8765',
@@ -45,8 +49,10 @@ class StartMenuScreen(Screen):
                 id='room_number', value=str(random.randint(1, 100_000)), type='integer'
             )
 
-            yield Button.success('Join', id='join')
-            yield Button.warning('Create', id='create')
+            with HorizontalGroup(id='buttons'):
+                yield Button.success('Join', id='join')
+                yield Button.warning('Create', id='create')
+                yield Button('Rejoin', id='rejoin', variant='primary')
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         form_info = FormInfo(
@@ -58,11 +64,15 @@ class StartMenuScreen(Screen):
         match event.button.id:
             case 'join':
                 self.loading = True
-                self.post_message(self.JoinRoom(form_info))
+                self.post_message(StartMenuScreen.JoinRoom(form_info))
 
             case 'create':
                 self.loading = True
-                self.post_message(self.CreateRoom(form_info))
+                self.post_message(StartMenuScreen.CreateRoom(form_info))
+
+            case 'rejoin':
+                self.loading = True
+                self.post_message(StartMenuScreen.Rejoin(form_info))
 
             case _:
                 raise Exception(f'Unsupported button id {event.button.id!r}')

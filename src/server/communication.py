@@ -51,17 +51,15 @@ async def broadcast_to_players(
 ) -> None:
     skip_ids = {player.id for player in players_to_skip or []}
 
-    connected_players = list(room.get_connected_players())
+    users = list(room.get_users())
 
-    logger.info(
-        f'Broadcasting {type} to {len(connected_players)} players in room {room.number}'
-    )
+    logger.info(f'Broadcasting {type} to {len(users)} players in room {room.number}')
 
-    for websocket, player in connected_players:
-        if player.id in skip_ids:
+    for user in users:
+        if user.player.id in skip_ids:
             continue
 
         try:
-            await send_to_player(websocket, type, data)
+            await send_to_player(user.websocket, type, data)
         except Exception as e:
-            logger.error(f'Failed to broadcast to player {player.name}: {e}')
+            logger.error(f'Failed to broadcast to player {user.player.name}: {e}')

@@ -1,3 +1,21 @@
+Grid.inputs {
+  background: $boost;
+  padding: 1 2;
+  height: auto;
+  grid-size: 2;
+  grid-gutter: 1;
+  grid-columns: auto 1fr;
+  border: tall blank;
+  &:focus-within {
+      border: tall $accent;
+  }
+  Label {
+      width: 100%;
+      padding: 1;
+      text-align: right;
+  }
+}
+
 # --- board ---
 
 Board {
@@ -89,22 +107,12 @@ RoomScreen {
 # --- start menu ---
 
 StartMenuScreen {
-  Grid {
-      background: $boost;
-      padding: 1 2;
-      height: auto;
-      grid-size: 2;
-      grid-gutter: 1;
-      grid-columns: auto 1fr;
-      border: tall blank;
-      &:focus-within {
-          border: tall $accent;
-      }
-      Label {
-          width: 100%;
-          padding: 1;
-          text-align: right;
-      }
+  #buttons {
+    column-span: 2;
+     
+    Button {
+      margin-right: 1;
+    }
   }
 }
 
