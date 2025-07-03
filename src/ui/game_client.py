@@ -1,7 +1,7 @@
 import asyncio
+import inspect
 import json
 from collections.abc import Awaitable
-from inspect import iscoroutinefunction
 from typing import Any, Protocol
 
 import websockets
@@ -70,7 +70,7 @@ class GameClient:
             async for ws_message in self.websocket:
                 message = MessageData.from_dict(json.loads(ws_message))
 
-                if iscoroutinefunction(self.on_server_message):
+                if inspect.isawaitable(self.on_server_message):
                     await self.on_server_message(message)
                 else:
                     self.on_server_message(message)
@@ -78,7 +78,7 @@ class GameClient:
             if self.on_connection_closed is None:
                 raise
 
-            if iscoroutinefunction(self.on_connection_closed):
+            if inspect.isawaitable(self.on_connection_closed):
                 await self.on_connection_closed()
             else:
                 self.on_connection_closed()
