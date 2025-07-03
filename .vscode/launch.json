@@ -5,6 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Attach",
+      "type": "debugpy",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    },
+    {
       "name": "UI",
       "type": "debugpy",
       "request": "launch",
